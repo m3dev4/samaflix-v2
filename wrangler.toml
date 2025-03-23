@@ -1,9 +1,10 @@
 [build]
-command = "pnpm install && pnpm run build && pnpm run pages:build"
-pages_build_output_dir = ".next"
+command = "pnpm install && pnpm run build"
+pages_build_output_dir = ".next/standalone"
 
 [build.environment]
 NODE_VERSION = "18"
+NEXT_TELEMETRY_DISABLED = "1"
 
 [site]
 bucket = ".next"
