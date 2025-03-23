@@ -1,0 +1,8 @@
+.next
+out
+node_modules
+*.config.js
+*.config.ts
+public
+build
+coverage 
