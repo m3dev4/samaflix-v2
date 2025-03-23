@@ -1,12 +1,12 @@
 [build]
 command = "pnpm install && pnpm run build && pnpm run pages:build"
-publish = ".next/static"
+pages_build_output_dir = ".next"
 
 [build.environment]
 NODE_VERSION = "18"
 
 [site]
-bucket = ".next/static"
+bucket = ".next"
 
 [build.processing]
 skip_processing = true 
