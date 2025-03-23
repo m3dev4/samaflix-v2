@@ -1,0 +1,14 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+      "module": "ESNext",
+      "moduleResolution": "node",
+      "noEmit": true,
+      "allowImportingTsExtensions": true,
+      "paths": {
+        "@/*": ["./*"]
+      }
+    },
+    "include": ["test/**/*.ts", "scrappe/**/*.ts"],
+    "exclude": ["node_modules"]
+  }

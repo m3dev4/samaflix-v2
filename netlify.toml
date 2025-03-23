@@ -1,0 +1,9 @@
+[build]
+  command = "pnpm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NEXT_PUBLIC_TMDB_API_KEY = "0c9d5d891e86e46739c415e5ecb64057"
