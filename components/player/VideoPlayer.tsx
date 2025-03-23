@@ -240,14 +240,14 @@ export function VideoPlayer({
 
       const videoId = embedUrl.match(/embed-([a-zA-Z0-9]+)/)?.[1];
       if (!videoId) {
+        console.error("ID vidéo non trouvé dans l'URL:", embedUrl);
         throw new Error("ID vidéo invalide");
       }
 
       console.log("Tentative de chargement de la vidéo avec ID:", videoId);
 
-      // Utiliser le proxy externe
-      const proxyUrl = "https://benevolent-bombolone-c020ba.netlify.app/api/convert/uqload";
-      const response = await fetch(`${proxyUrl}?id=${videoId}`);
+      // Utiliser le proxy local
+      const response = await fetch(`/api/convert/uqload?id=${videoId}`);
       const data = await response.json();
 
       if (!response.ok || !data.videoUrl) {
@@ -257,18 +257,34 @@ export function VideoPlayer({
       console.log("URL de la vidéo obtenue:", data.videoUrl);
 
       if (videoRef.current) {
-        if (data.videoUrl.includes('.m3u8') && Hls.isSupported()) {
-          // Utiliser HLS pour les flux m3u8
+        // Utiliser le proxy pour la vidéo
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(data.videoUrl)}`;
+
+        const headResponse = await fetch(proxyUrl, { method: "HEAD" });
+        if (!headResponse.ok) {
+          throw new Error("La source vidéo n'est pas accessible");
+        }
+
+        if (data.type === "hls" && Hls.isSupported()) {
+          console.log("Utilisation du mode HLS");
           hlsRef.current = new Hls({
             capLevelToPlayerSize: true,
-            startLevel: 2
+            startLevel: 2,
+            debug: true
           });
           
-          hlsRef.current.loadSource(data.videoUrl);
+          hlsRef.current.loadSource(proxyUrl);
           hlsRef.current.attachMedia(videoRef.current);
           
+          hlsRef.current.on(Hls.Events.ERROR, (event, data) => {
+            console.error("Erreur HLS:", event, data);
+          });
+          
           hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
-            videoRef.current?.play().catch(console.error);
+            console.log("Manifest HLS parsé avec succès");
+            videoRef.current?.play().catch(err => {
+              console.error("Erreur lors de la lecture HLS:", err);
+            });
           });
 
           cleanupRef.current = () => {
@@ -278,16 +294,20 @@ export function VideoPlayer({
             }
           };
         } else {
-          // Flux MP4 standard
-          videoRef.current.src = data.videoUrl;
+          console.log("Utilisation du mode MP4 standard");
+          videoRef.current.src = proxyUrl;
+          videoRef.current.preload = "auto";
           await videoRef.current.load();
-          videoRef.current.play().catch(console.error);
+          videoRef.current.play().catch(err => {
+            console.error("Erreur lors de la lecture MP4:", err);
+            throw err;
+          });
         }
         setIsLoading(false);
       }
     } catch (error) {
-      console.error("Erreur de chargement:", error);
-      setError("Une erreur est survenue lors de la lecture de la vidéo");
+      console.error("Erreur complète lors du chargement:", error);
+      setError(error instanceof Error ? error.message : "Une erreur est survenue lors de la lecture de la vidéo");
       setIsLoading(false);
     }
   };
