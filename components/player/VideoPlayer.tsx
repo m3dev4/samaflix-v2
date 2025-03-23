@@ -245,7 +245,9 @@ export function VideoPlayer({
 
       console.log("Tentative de chargement de la vidéo avec ID:", videoId);
 
-      const response = await fetch(`/api/convert/uqload?id=${videoId}`);
+      // Utiliser le proxy externe
+      const proxyUrl = "https://benevolent-bombolone-c020ba.netlify.app/api/convert/uqload";
+      const response = await fetch(`${proxyUrl}?id=${videoId}`);
       const data = await response.json();
 
       if (!response.ok || !data.videoUrl) {
@@ -255,65 +257,37 @@ export function VideoPlayer({
       console.log("URL de la vidéo obtenue:", data.videoUrl);
 
       if (videoRef.current) {
-        const proxyUrl = `/api/proxy?url=${encodeURIComponent(data.videoUrl)}`;
-
-        const headResponse = await fetch(proxyUrl, { method: "HEAD" });
-        if (!headResponse.ok) {
-          throw new Error("La source vidéo n'est pas accessible");
-        }
-
-        if (data.type === "hls") {
-          if (Hls.isSupported()) {
-            hlsRef.current = new Hls({
-              capLevelToPlayerSize: true,
-              startLevel: 2 // Commence avec une qualité moyenne
-            });
-            
-            hlsRef.current.loadSource(proxyUrl);
-            hlsRef.current.attachMedia(videoRef.current);
-            
-            hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
-              // Récupérer les niveaux de qualité disponibles
-              const levels = hlsRef.current?.levels || [];
-              console.log("Niveaux de qualité disponibles:", levels);
-              
-              // Mettre à jour la qualité actuelle
-              const currentLevel = hlsRef.current?.currentLevel || 0;
-              const currentHeight = levels[currentLevel]?.height;
-              setCurrentQuality(`${currentHeight}p`);
-              
-              videoRef.current?.play().catch((err) => {
-                console.error("Erreur de lecture automatique:", err);
-              });
-            });
-
-            // Gérer le changement de qualité
-            hlsRef.current.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
-              const newLevel = data.level;
-              const newHeight = hlsRef.current?.levels[newLevel]?.height;
-              setCurrentQuality(`${newHeight}p`);
-            });
-
-            // Sauvegarder l'instance HLS pour le changement de qualité
-            cleanupRef.current = () => {
-              if (hlsRef.current) {
-                hlsRef.current.destroy();
-                hlsRef.current = null;
-              }
-            };
-          }
-        } else {
-          videoRef.current.src = proxyUrl;
-          videoRef.current.preload = "auto";
-          videoRef.current.play().catch((err) => {
-            console.error("Erreur de lecture automatique:", err);
+        if (data.videoUrl.includes('.m3u8') && Hls.isSupported()) {
+          // Utiliser HLS pour les flux m3u8
+          hlsRef.current = new Hls({
+            capLevelToPlayerSize: true,
+            startLevel: 2
           });
+          
+          hlsRef.current.loadSource(data.videoUrl);
+          hlsRef.current.attachMedia(videoRef.current);
+          
+          hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
+            videoRef.current?.play().catch(console.error);
+          });
+
+          cleanupRef.current = () => {
+            if (hlsRef.current) {
+              hlsRef.current.destroy();
+              hlsRef.current = null;
+            }
+          };
+        } else {
+          // Flux MP4 standard
+          videoRef.current.src = data.videoUrl;
+          await videoRef.current.load();
+          videoRef.current.play().catch(console.error);
         }
+        setIsLoading(false);
       }
-    } catch (err) {
-      console.error("Erreur de chargement:", err);
-      setError(err instanceof Error ? err.message : "Erreur de chargement");
-    } finally {
+    } catch (error) {
+      console.error("Erreur de chargement:", error);
+      setError("Une erreur est survenue lors de la lecture de la vidéo");
       setIsLoading(false);
     }
   };
