@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export',
   images: {
     unoptimized: true,
     domains: [
@@ -9,7 +8,7 @@ const nextConfig: NextConfig = {
       "cpasmieux.is",
       "uqload.net",
       "upload.wikimedia.org",
-      "www.cpasmieux.ad"
+      "www.cpasmieux.ad",
     ],
   },
 };
