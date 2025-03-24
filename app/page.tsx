@@ -40,9 +40,9 @@ export default async function Home() {
           </nav>
         </div>
       </header>
-      <div className="flex items-center justify-center">
+      {/* <div className="flex items-center justify-center">
       <AlerteInfo />
-      </div>
+      </div> */}
       <div className="relative h-screen">
         <StreamingUi />
       </div>
