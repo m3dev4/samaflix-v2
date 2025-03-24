@@ -78,6 +78,16 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
     setIsDragging(false);
   };
 
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (progressBarRef.current) {
+      const rect = progressBarRef.current.getBoundingClientRect();
+      const touch = e.touches[0];
+      const pos = (touch.clientX - rect.left) / rect.width;
+      const newTime = Math.max(0, Math.min(pos * duration, duration));
+      onProgressBarClick({ clientX: touch.clientX } as React.MouseEvent<HTMLDivElement>);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -86,62 +96,77 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.3 }}
         >
-          {/* Progress Bar */}
-          <div
-            className="relative h-12 flex items-center px-4"
+          {/* Barre de contrôle mobile */}
+          <div className="flex items-center justify-between px-4 py-2 md:hidden">
+            <button
+              onClick={onPlayPause}
+              className="p-2 text-white hover:text-player-accent transition-colors"
+            >
+              {isPlaying ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" />
+                </svg>
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 4.5L19 12L6 19.5V4.5Z" fill="currentColor" />
+                </svg>
+              )}
+            </button>
+
+            <div className="flex items-center gap-4">
+              <button
+                onClick={onMuteToggle}
+                className="p-2 text-white hover:text-player-accent transition-colors"
+              >
+                {isMuted ? (
+                  <VolumeX size={20} />
+                ) : (
+                  <Volume2 size={20} />
+                )}
+              </button>
+
+              <button
+                onClick={onFullscreenToggle}
+                className="p-2 text-white hover:text-player-accent transition-colors"
+              >
+                <Maximize size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Barre de progression */}
+          <div 
+            className="w-full h-4 bg-transparent relative cursor-pointer touch-none"
+            onClick={onProgressBarClick}
+            onMouseMove={handleProgressMouseMove}
+            onMouseLeave={handleProgressMouseLeave}
             onMouseDown={handleProgressMouseDown}
             onMouseUp={handleProgressMouseUp}
-            onMouseLeave={handleProgressMouseLeave}
+            onTouchStart={handleProgressMouseDown}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleProgressMouseUp}
+            ref={progressBarRef}
           >
-            {/* Progress tooltip - shown on hover */}
-            <AnimatePresence>
-              {progressTooltip.visible && (
-                <motion.div
-                  className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 backdrop-blur-md rounded text-xs text-white z-30"
-                  style={{
-                    left: `${progressTooltip.position}px`,
-                    transform: "translateX(-50%)",
-                  }}
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                >
-                  {formatTime(progressTooltip.time)}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div
-              ref={progressBarRef}
-              className="progress-bar group z-20"
-              onClick={onProgressBarClick}
-              onMouseMove={handleProgressMouseMove}
-            >
-              {/* Buffered progress */}
+            <div className="absolute left-0 right-0 top-1/2 transform -translate-y-1/2 h-1">
+              <div className="absolute inset-0 bg-white/20" />
               <div
-                className="progress-bar-buffer"
+                className="absolute left-0 top-0 bottom-0 bg-white/30"
                 style={{ width: `${bufferedPercentage}%` }}
               />
-
-              {/* Actual progress */}
               <div
-                className="progress-bar-fill bg-gradient-to-r from-blue-400 to-player-accent"
+                className="absolute left-0 top-0 bottom-0 bg-player-accent"
                 style={{ width: `${(currentTime / duration) * 100}%` }}
               >
-                {/* Seeker handle */}
-                <div
-                  className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 h-4 w-4 
-                              bg-white rounded-full shadow-md scale-0 opacity-0 transition-all duration-200 
-                              group-hover:scale-100 group-hover:opacity-100"
-                />
+                <div className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-player-accent rounded-full" />
               </div>
             </div>
           </div>
 
-          {/* Controls */}
-          <div className="bg-gradient-to-t from-black/90 via-black/70 to-transparent pb-6 pt-2 px-6">
+          {/* Contrôles desktop existants */}
+          <div className="bg-gradient-to-t from-black/90 via-black/70 to-transparent pb-6 pt-2 px-6 hidden md:block">
             <div className="flex items-center justify-between">
               {/* Left controls */}
               <div className="flex items-center space-x-4">
