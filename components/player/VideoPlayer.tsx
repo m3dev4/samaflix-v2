@@ -220,9 +220,21 @@ export function VideoPlayer({
   const toggleFullscreen = () => {
     if (containerRef.current) {
       if (!document.fullscreenElement) {
-        containerRef.current.requestFullscreen();
+        if (containerRef.current.requestFullscreen) {
+          containerRef.current.requestFullscreen();
+        } else if ((containerRef.current as any).webkitRequestFullscreen) {
+          (containerRef.current as any).webkitRequestFullscreen();
+        } else if ((containerRef.current as any).msRequestFullscreen) {
+          (containerRef.current as any).msRequestFullscreen();
+        }
       } else {
-        document.exitFullscreen();
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          (document as any).webkitExitFullscreen();
+        } else if ((document as any).msExitFullscreen) {
+          (document as any).msExitFullscreen();
+        }
       }
     }
   };
@@ -336,7 +348,9 @@ export function VideoPlayer({
   };
 
   const handleFullscreenChange = () => {
-    const isFullscreenNow = document.fullscreenElement !== null;
+    const isFullscreenNow = document.fullscreenElement !== null ||
+      (document as any).webkitFullscreenElement !== null ||
+      (document as any).msFullscreenElement !== null;
     setIsFullscreen(isFullscreenNow);
     setShowControls(true);
     
@@ -361,9 +375,13 @@ export function VideoPlayer({
 
   useEffect(() => {
     document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
     
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
       }
@@ -546,7 +564,7 @@ export function VideoPlayer({
               {showControls && !isSettingsOpen && (
                 <motion.button
                   className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20
-                            bg-black/30 backdrop-blur-md rounded-full p-6 flex items-center justify-center
+                            bg-black/30 backdrop-blur-md rounded-full md:p-6 p-3 flex items-center justify-center
                             hover:bg-player-accent/30 transition-all duration-300"
                   onClick={togglePlay}
                   initial={{ scale: 0.8, opacity: 0 }}
@@ -557,7 +575,8 @@ export function VideoPlayer({
                 >
                   {isPlaying ? (
                     <motion.svg 
-                      width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      className="md:w-9 md:h-9 w-6 h-6"
                       initial={{ scale: 0.8 }}
                       animate={{ scale: 1 }}
                     >
@@ -566,7 +585,8 @@ export function VideoPlayer({
                     </motion.svg>
                   ) : (
                     <motion.svg 
-                      width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                      className="md:w-9 md:h-9 w-6 h-6"
                       initial={{ scale: 0.8, x: 1 }}
                       animate={{ scale: 1, x: 0 }}
                     >
