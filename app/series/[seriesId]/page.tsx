@@ -128,13 +128,24 @@ export default function SeriesDetailsPage() {
   }, [params.seriesId]);
 
   const handleEpisodeClick = async (episode: Episode, resumeTime?: number) => {
+    if (!series) return;
+    
+    const loadingToast = toast.loading("Recherche d'un flux vidéo...", {
+      duration: Infinity,
+      dismissible: true,
+      closeButton: true,
+      style: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        color: 'white',
+        borderRadius: '8px',
+        padding: '12px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px'
+      }
+    });
+    
     try {
-      if (!series) return;
-      
-      const loadingToast = toast.loading("Recherche d'un flux vidéo...", {
-        duration: Infinity
-      });
-      
       const { extractDuLourd } = await import('@/utils/sites/duLourd/scrape');
       console.log("Searching streams for:", {
         name: series.name,
@@ -149,9 +160,9 @@ export default function SeriesDetailsPage() {
       );
       
       console.log("Stream sources found:", sources);
-      toast.dismiss(loadingToast);
       
       if (sources && sources.length > 0) {
+        toast.dismiss(loadingToast);
         // Sélectionner le meilleur provider disponible
         const bestProvider = sources.find(s => s.player === 'uqload' && s.quality === '1080p') || 
                            sources.find(s => s.player === 'uqload') ||
@@ -164,14 +175,10 @@ export default function SeriesDetailsPage() {
         // Lancer directement la vidéo
         handleProviderSelection(episode, bestProvider, resumeTime);
       } else {
-        toast.error("Impossible de trouver un flux vidéo pour cet épisode", {
-          duration: 3000
-        });
+        toast.dismiss(loadingToast);
       }
     } catch (error) {
-      toast.error("Erreur lors de la recherche du flux vidéo", {
-        duration: 3000
-      });
+      toast.dismiss(loadingToast);
       console.error('Error:', error);
     }
   };
