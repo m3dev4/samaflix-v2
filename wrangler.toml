@@ -1,0 +1,37 @@
+name = "samaflix-v2"
+compatibility_date = "2023-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[build]
+command = "npm run build"
+output_dir = ".next/standalone"
+main = ".next/standalone/_worker.js"
+
+[site]
+bucket = "./public"
+
+[env.production]
+workers_dev = true
+routes = [
+  { pattern = "/*", zone_name = "samaflix.com" }
+]
+
+[build.upload]
+format = "modules"
+main = ".next/standalone/_worker.js"
+dir = ".next"
+rules = [
+  { type = "Text", globs = ["**/*.js", "**/*.mjs"] }
+]
+
+[build.options]
+commit_dirty = true
+
+# Optimisations pour réduire la taille du build
+[build.optimization]
+minify = true
+tree_shaking = true
+
+[limits]
+memory_mb = 1024
+timeout_seconds = 30
