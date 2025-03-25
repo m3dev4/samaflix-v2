@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 [build]
 command = "npm run build"
 output_dir = ".next/standalone"
-main = ".next/standalone/_worker.js"
+main = ".next/standalone/server.js"
 
 [site]
 bucket = "./public"
@@ -18,7 +18,7 @@ routes = [
 
 [build.upload]
 format = "modules"
-main = ".next/standalone/_worker.js"
+main = ".next/standalone/server.js"
 dir = ".next"
 rules = [
   { type = "Text", globs = ["**/*.js", "**/*.mjs"] }

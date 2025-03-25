@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
     },
     optimizeCss: true,
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     config.optimization = {
       ...config.optimization,
       minimize: true,
@@ -29,7 +29,11 @@ const nextConfig: NextConfig = {
       }
     }
     if (isServer) {
-      config.output.filename = '_worker.js';
+      config.output = {
+        ...config.output,
+        filename: '[name].js',
+        chunkFilename: '[name].[chunkhash].js'
+      };
     }
     return config;
   }
