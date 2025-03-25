@@ -16,6 +16,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const runtime = "edge";
+
 export const metadata: Metadata = {
   title: "Samaflix - Streaming Films et Séries HD",
   description: "Regardez les meilleurs films et séries en streaming HD, sans pub et gratuitement sur Samaflix. Dernières sorties, films VF et VOSTFR en ligne.",
