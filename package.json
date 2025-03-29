@@ -22,7 +22,7 @@
     "dev": "next dev",
     "build": "next build",
     "deploy": "wrangler pages deploy .next",
-    "start": "next start -p $PORT",
+    "start": "next start",
     "lint": "next lint",
     "pages:build": "npx @cloudflare/pages/next-on-pages",
     "test:scraper": "cross-env NODE_ENV=test node --loader ts-node/esm ./test/test.ts",
