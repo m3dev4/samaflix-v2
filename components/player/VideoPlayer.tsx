@@ -221,7 +221,7 @@ export function VideoPlayer({
     if (containerRef.current) {
       if (!document.fullscreenElement) {
         if (containerRef.current.requestFullscreen) {
-          containerRef.current.requestFullscreen();
+        containerRef.current.requestFullscreen();
         } else if ((containerRef.current as any).webkitRequestFullscreen) {
           (containerRef.current as any).webkitRequestFullscreen();
         } else if ((containerRef.current as any).msRequestFullscreen) {
@@ -229,7 +229,7 @@ export function VideoPlayer({
         }
       } else {
         if (document.exitFullscreen) {
-          document.exitFullscreen();
+        document.exitFullscreen();
         } else if ((document as any).webkitExitFullscreen) {
           (document as any).webkitExitFullscreen();
         } else if ((document as any).msExitFullscreen) {
@@ -279,15 +279,15 @@ export function VideoPlayer({
 
         if (data.type === "hls" && Hls.isSupported()) {
           console.log("Utilisation du mode HLS");
-          hlsRef.current = new Hls({
-            capLevelToPlayerSize: true,
+            hlsRef.current = new Hls({
+              capLevelToPlayerSize: true,
             startLevel: 2,
             debug: true
-          });
-          
-          hlsRef.current.loadSource(proxyUrl);
-          hlsRef.current.attachMedia(videoRef.current);
-          
+            });
+            
+            hlsRef.current.loadSource(proxyUrl);
+            hlsRef.current.attachMedia(videoRef.current);
+            
           hlsRef.current.on(Hls.Events.ERROR, (event, data) => {
             console.error("Erreur HLS:", event, data);
           });
@@ -299,12 +299,12 @@ export function VideoPlayer({
             });
           });
 
-          cleanupRef.current = () => {
-            if (hlsRef.current) {
-              hlsRef.current.destroy();
-              hlsRef.current = null;
-            }
-          };
+            cleanupRef.current = () => {
+              if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
+              }
+            };
         } else {
           console.log("Utilisation du mode MP4 standard");
           videoRef.current.src = proxyUrl;

@@ -118,48 +118,77 @@ const PageMovies = () => {
     }
   }, [selectedPlatform, categoryMovies, filterMoviesByPlatform]);
 
-  // Effet pour charger les films avec mise en cache
+  // Effet pour charger les films avec mise en cache et chargement progressif
   useEffect(() => {
     const fetchMoviesData = async () => {
       try {
         setIsLoading(true);
         
-        // Vérifier le cache
-        const cachedData = sessionStorage.getItem('moviesData');
-        if (cachedData) {
-          setCategoryMovies(JSON.parse(cachedData));
-          setIsLoading(false);
-          return;
+        // Charger d'abord les catégories principales
+        const mainCategories = ["Now Playing", "Top Rated", "Most Popular"];
+        const initialData: { [key: string]: Movie[] } = {};
+
+        // Vérifier le cache pour chaque catégorie
+        for (const category of mainCategories) {
+          const cachedData = sessionStorage.getItem(`movies_${category}`);
+          if (cachedData) {
+            initialData[category] = JSON.parse(cachedData);
+          }
         }
 
-        const data = await getMovies();
-        const categorizedMovies = {
-          "Now Playing": data.latestMovies,
-          "Top Rated": data.topRated,
-          "Most Popular": data.popularMovies,
-          "Action & Adventure": data.actionAndAdventure,
-          "Animation": data.animation,
-          "Comedy": data.comedy,
-          "Crime": data.crime,
-          "Documentary": data.documentary,
-          "Drama": data.drama,
-          "Horror": data.horror,
-          "Family": data.family,
-          "Romance": data.romance,
-          "Mystery & Thriller": data.mysteryAndThriller,
-          "Reality": data.reality,
-          "Sci-Fi": data.scifi,
-          "War": data.war,
-          "Western": data.western,
-        };
+        if (Object.keys(initialData).length === mainCategories.length) {
+          setCategoryMovies(initialData);
+          setIsLoading(false);
+        } else {
+          const data = await getMovies();
+          
+          // Sauvegarder uniquement les catégories principales d'abord
+          const initialMovies = {
+            "Now Playing": data.latestMovies,
+            "Top Rated": data.topRated,
+            "Most Popular": data.popularMovies,
+          };
 
-        // Mettre en cache les données
-        sessionStorage.setItem('moviesData', JSON.stringify(categorizedMovies));
-        setCategoryMovies(categorizedMovies);
+          // Mettre en cache chaque catégorie séparément
+          Object.entries(initialMovies).forEach(([category, movies]) => {
+            sessionStorage.setItem(`movies_${category}`, JSON.stringify(movies));
+          });
+
+          setCategoryMovies(initialMovies);
+          setIsLoading(false);
+
+          // Charger les catégories restantes en arrière-plan
+          setTimeout(async () => {
+            const remainingCategories = {
+              "Action & Adventure": data.actionAndAdventure,
+              "Animation": data.animation,
+              "Comedy": data.comedy,
+              "Crime": data.crime,
+              "Documentary": data.documentary,
+              "Drama": data.drama,
+              "Horror": data.horror,
+              "Family": data.family,
+              "Romance": data.romance,
+              "Mystery & Thriller": data.mysteryAndThriller,
+              "Reality": data.reality,
+              "Sci-Fi": data.scifi,
+              "War": data.war,
+              
+            };
+
+            // Mettre en cache chaque catégorie restante
+            Object.entries(remainingCategories).forEach(([category, movies]) => {
+              sessionStorage.setItem(`movies_${category}`, JSON.stringify(movies));
+            });
+
+            setCategoryMovies(prev => ({
+              ...prev,
+              ...remainingCategories
+            }));
+          }, 2000); // Délai de 2 secondes après le chargement initial
+        }
       } catch (error) {
         console.error("Erreur lors du chargement des films:", error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
