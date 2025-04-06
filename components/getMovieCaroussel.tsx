@@ -21,7 +21,6 @@ const GetMovieCaroussel = async () => {
     reality,
     scifi,
     war,
-    western,
   } = await getMovies();
   return (
     <div className="space-y-8">
@@ -42,7 +41,6 @@ const GetMovieCaroussel = async () => {
       <MovieCaroussel title="Reality" movies={reality} />
       <MovieCaroussel title="Sci-Fi" movies={scifi} />
       <MovieCaroussel title="War" movies={war} />
-      <MovieCaroussel title="Western" movies={western} />
 
     </div>
   );
