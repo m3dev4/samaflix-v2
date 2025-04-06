@@ -46,8 +46,7 @@ const categoryMap: { [key: string]: keyof Awaited<ReturnType<typeof getMovies>> 
   "mystery-thriller": "mysteryAndThriller",
   "reality": "reality",
   "sci-fi": "scifi",
-  "war": "war",
-  "western": "western"
+  "war": "war"
 };
 
 export default function CategoryPage() {
