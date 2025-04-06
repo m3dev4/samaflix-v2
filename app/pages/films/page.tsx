@@ -147,6 +147,19 @@ const PageMovies = () => {
             "Now Playing": data.latestMovies,
             "Top Rated": data.topRated,
             "Most Popular": data.popularMovies,
+            "Action & Adventure": data.actionAndAdventure,
+            "Animation": data.animation,
+            "Comedy": data.comedy,
+            "Crime": data.crime,
+            "Documentary": data.documentary,
+            "Drama": data.drama,
+            "Horror": data.horror,
+            "Family": data.family,
+            "Romance": data.romance,
+            "Mystery & Thriller": data.mysteryAndThriller,
+            "Reality": data.reality,
+            "Sci-Fi": data.scifi,
+            "War": data.war,
           };
 
           // Mettre en cache chaque catégorie séparément
