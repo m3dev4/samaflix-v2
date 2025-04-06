@@ -41,6 +41,7 @@ export function FilterSection({ onFilterChange }: FilterSectionProps) {
     { value: 'popularity.desc', label: 'Most Popular' },
     { value: 'vote_average.desc', label: 'Top Rated' },
     { value: 'first_air_date.desc', label: 'Latest Releases' },
+    { value: 'horror', label: 'Horror' },
   ];
 
   useEffect(() => {
