@@ -36,8 +36,21 @@ async function fetchWithCache(url: string) {
 async function fetchMovieProviders(movieId: number) {
   try {
     const url = `${TMDB_API_URL}/movie/${movieId}/watch/providers?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`;
-    const data = await fetchWithCache(url);
-    return data.results?.FR || null; // Retourne spécifiquement les providers français
+    const response = await fetch(url);
+    
+    // Si on reçoit une 404, on retourne simplement null sans logger d'erreur
+    if (response.status === 404) {
+      return null;
+    }
+    
+    // Pour les autres erreurs, on les log mais on retourne quand même null
+    if (!response.ok) {
+      console.error(`Error fetching providers for movie ${movieId}: ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    return data.results?.FR || null;
   } catch (error) {
     console.error(`Error fetching providers for movie ${movieId}:`, error);
     return null;
@@ -58,6 +71,19 @@ export async function enrichMoviesWithProviders(movies: any[]) {
   return enrichedMovies;
 }
 
+// Fonction utilitaire pour récupérer plusieurs pages de résultats
+async function fetchMultiplePages(baseUrl: string, pages: number = 10) {
+  const results = [];
+  for (let page = 1; page <= pages; page++) {
+    const url = `${baseUrl}&page=${page}`;
+    const data = await fetchWithCache(url);
+    if (data.results) {
+      results.push(...data.results);
+    }
+  }
+  return { results };
+}
+
 export async function fetchTrending() {
   const url = `${TMDB_API_URL}/trending/all/week?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=fr-FR`;
   return fetchWithCache(url);
@@ -69,18 +95,18 @@ export async function fetchSimilar(movieId: number) {
 }
 
 export async function fetchLatestMovies() {
-  const url = `${TMDB_API_URL}/movie/now_playing?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=fr-FR&region=FR`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/movie/now_playing?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=fr-FR&region=FR`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchPopularTVShows() {
-  const url = `${TMDB_API_URL}/tv/popular?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=fr-FR`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/tv/popular?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=fr-FR`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchTopRated() {
-  const url = `${TMDB_API_URL}/movie/top_rated?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=fr-FR`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/movie/top_rated?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=fr-FR`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function searchMovies(query: string) {
@@ -89,79 +115,79 @@ export async function searchMovies(query: string) {
 }
 
 export async function fetchMostPopular() {
-  const url = `${TMDB_API_URL}/movie/popular?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=fr-FR`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/movie/popular?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=fr-FR`;
+  return fetchMultiplePages(baseUrl);
 }
 
 // Catégories TMDB avec cache
 export async function fetchCategoryActionAndAdventure() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=12,28`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=12,28`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchCategoryAnimation() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=16`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=16`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchCategoryComedy() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=35`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=35`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchCategoryCrime() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=80`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=80`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchCategoryDocumentary() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=99`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=99`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchCategoryDrama() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=18`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=18`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchCategoryHorror() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=27`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=27`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchCategoryFamily() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=10751`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=10751`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchCategoryRomance() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=10749`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=10749`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fecthCategoryMysteryAndThriller() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=9648,53`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=9648,53`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchCategoryReality() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=10764`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=10764`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fecthCategorySciFi() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=878`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=878`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchCategoryWar() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=10752`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=10752`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export async function fetchCategoryWestern() {
-  const url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=37`;
-  return fetchWithCache(url);
+  const baseUrl = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=37`;
+  return fetchMultiplePages(baseUrl);
 }
 
 export function getImageUrl(path: string, size: "original" | "w500" = "original") {

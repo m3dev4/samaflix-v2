@@ -52,7 +52,7 @@ export const categories = [
   "Reality",
   "Sci-Fi",
   "War",
-  "Western",
+  "Western"
 ];
 
 export const seriesCategories = [  

@@ -43,6 +43,16 @@ interface Movie {
   };
 }
 
+// Fonction pour normaliser les titres
+function normalizeTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+}
+
 // Fonction utilitaire pour formater les résultats
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 const formatAndEnrichMovies = async (results: any[]): Promise<Movie[]> => {
@@ -50,6 +60,9 @@ const formatAndEnrichMovies = async (results: any[]): Promise<Movie[]> => {
   const formattedMovies = results.map(movie => ({
     id: movie.id,
     title: movie.title || movie.name || "",
+    original_title: movie.original_title || movie.original_name || "",
+    english_title: movie.title_english || "", // Certains films ont un titre anglais
+    normalized_title: normalizeTitle(movie.title || movie.name || ""),
     poster_path: movie.poster_path,
     backdrop_path: movie.backdrop_path,
     overview: movie.overview,
@@ -111,25 +124,25 @@ export async function getMovies() {
   ] = await Promise.all([
     formatAndEnrichMovies(trending.results),
     formatAndEnrichMovies([heroMovie]),
-    formatAndEnrichMovies(similar.results.slice(0, 20)),
-    formatAndEnrichMovies(latestMovies.results.slice(0, 20)),
-    formatAndEnrichMovies(popularTvShow.results.slice(0, 20)),
-    formatAndEnrichMovies(topRated.results.slice(0, 20)),
-    formatAndEnrichMovies(popularMovies.results.slice(0, 20)),
-    formatAndEnrichMovies(actionAndAdventure.results.slice(0, 20)),
-    formatAndEnrichMovies(animation.results.slice(0, 20)),
-    formatAndEnrichMovies(comedy.results.slice(0, 20)),
-    formatAndEnrichMovies(crime.results.slice(0, 20)),
-    formatAndEnrichMovies(documentary.results.slice(0, 20)),
-    formatAndEnrichMovies(drama.results.slice(0, 20)),
-    formatAndEnrichMovies(horror.results.slice(0, 20)),
-    formatAndEnrichMovies(family.results.slice(0, 20)),
-    formatAndEnrichMovies(romance.results.slice(0, 20)),
-    formatAndEnrichMovies(mysteryAndThriller.results.slice(0, 20)),
-    formatAndEnrichMovies(reality.results.slice(0, 20)),
-    formatAndEnrichMovies(scifi.results.slice(0, 20)),
-    formatAndEnrichMovies(war.results.slice(0, 20)),
-    formatAndEnrichMovies(western.results.slice(0, 20))
+    formatAndEnrichMovies(similar.results.slice(0, 100)),
+    formatAndEnrichMovies(latestMovies.results.slice(0, 100)),
+    formatAndEnrichMovies(popularTvShow.results.slice(0, 100)),
+    formatAndEnrichMovies(topRated.results.slice(0, 100)),
+    formatAndEnrichMovies(popularMovies.results.slice(0, 100)),
+    formatAndEnrichMovies(actionAndAdventure.results.slice(0, 500)),
+    formatAndEnrichMovies(animation.results.slice(0, 500)),
+    formatAndEnrichMovies(comedy.results.slice(0, 500)),
+    formatAndEnrichMovies(crime.results.slice(0, 500)),
+    formatAndEnrichMovies(documentary.results.slice(0, 500)),
+    formatAndEnrichMovies(drama.results.slice(0, 500)),
+    formatAndEnrichMovies(horror.results.slice(0, 500)),
+    formatAndEnrichMovies(family.results.slice(0, 500)),
+    formatAndEnrichMovies(romance.results.slice(0, 500)),
+    formatAndEnrichMovies(mysteryAndThriller.results.slice(0, 500)),
+    formatAndEnrichMovies(reality.results.slice(0, 500)),
+    formatAndEnrichMovies(scifi.results.slice(0, 500)),
+    formatAndEnrichMovies(war.results.slice(0, 500)),
+    formatAndEnrichMovies(western.results.slice(0, 500))
   ]);
 
   return {

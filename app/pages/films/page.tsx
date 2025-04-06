@@ -147,6 +147,7 @@ const PageMovies = () => {
           "Family": data.family,
           "Romance": data.romance,
           "Mystery & Thriller": data.mysteryAndThriller,
+          "Reality": data.reality,
           "Sci-Fi": data.scifi,
           "War": data.war,
           "Western": data.western,
