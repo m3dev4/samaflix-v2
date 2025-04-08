@@ -4,7 +4,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { MovieCard, MovieCardSkeleton } from "./movie-card";
 import { useInView } from "react-intersection-observer";
-import { ViewAllButton } from './ViewAllButton';
 
 interface MovieProvider {
   provider_name: string;
@@ -140,12 +139,9 @@ const MovieCaroussel = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl text-primary font-popins">
-          {title} {movies.length > 0 && `(${movies.length})`}
-        </h2>
-        <ViewAllButton category={title} count={movies.length} />
-      </div>
+      <h2 className="text-2xl text-primary font-popins">
+        {title} {movies.length > 0 && `(${movies.length})`}
+      </h2>
       <div className="relative group">
         <div
           ref={scrollRef}

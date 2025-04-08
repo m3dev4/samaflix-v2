@@ -20,7 +20,7 @@ import {
   fetchSimilar,
   fetchTopRated,
   fetchTrending,
-  fetchSeriesByProviderAndRegion,
+  fetchSeriesByProviderAndRegion
 } from "../utils/tmdb";
 
 interface Movie {
@@ -43,32 +43,19 @@ interface Movie {
   };
 }
 
-// Fonction pour normaliser les titres
-function normalizeTitle(title: string): string {
-  return title
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "")
-    .trim();
-}
-
 // Fonction utilitaire pour formater les résultats
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 const formatAndEnrichMovies = async (results: any[]): Promise<Movie[]> => {
   // D'abord formater les données de base
-  const formattedMovies = results.map((movie) => ({
+  const formattedMovies = results.map(movie => ({
     id: movie.id,
     title: movie.title || movie.name || "",
-    original_title: movie.original_title || movie.original_name || "",
-    english_title: movie.title_english || "", // Certains films ont un titre anglais
-    normalized_title: normalizeTitle(movie.title || movie.name || ""),
     poster_path: movie.poster_path,
     backdrop_path: movie.backdrop_path,
     overview: movie.overview,
     vote_average: movie.vote_average,
     release_date: movie.release_date || movie.first_air_date || "",
-    providers: movie.providers?.FR || undefined,
+    providers: movie.providers?.FR || undefined
   }));
 
   // Ensuite enrichir avec les providers
@@ -120,11 +107,13 @@ export async function getMovies() {
     enrichedReality,
     enrichedScifi,
     enrichedWar,
+    enrichedWestern
   ] = await Promise.all([
     formatAndEnrichMovies(trending.results),
     formatAndEnrichMovies([heroMovie]),
     formatAndEnrichMovies(similar.results.slice(0, 20)),
     formatAndEnrichMovies(latestMovies.results.slice(0, 20)),
+    formatAndEnrichMovies(popularTvShow.results.slice(0, 20)),
     formatAndEnrichMovies(topRated.results.slice(0, 20)),
     formatAndEnrichMovies(popularMovies.results.slice(0, 20)),
     formatAndEnrichMovies(actionAndAdventure.results.slice(0, 20)),
@@ -140,7 +129,7 @@ export async function getMovies() {
     formatAndEnrichMovies(reality.results.slice(0, 20)),
     formatAndEnrichMovies(scifi.results.slice(0, 20)),
     formatAndEnrichMovies(war.results.slice(0, 20)),
-    formatAndEnrichMovies(western.results.slice(0, 20)),
+    formatAndEnrichMovies(western.results.slice(0, 20))
   ]);
 
   return {
@@ -164,14 +153,15 @@ export async function getMovies() {
     reality: enrichedReality,
     scifi: enrichedScifi,
     war: enrichedWar,
+    western: enrichedWestern
   };
 }
 
 export async function getSeriesByProviderAndRegion(
   providers: string[],
   region: string = "FR",
-  maxResults: number = 200,
-  page: number = 1,
+  maxResults: number = 1000,
+  page: number = 1
 ) {
   const series = await fetchSeriesByProviderAndRegion(providers, region);
   return series.slice(0, maxResults);
