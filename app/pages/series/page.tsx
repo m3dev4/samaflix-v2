@@ -244,9 +244,9 @@ const PageSeries = () => {
             <SearchBar onSearch={handleSearch} />
           </section>
 
-          <div className="space-y-6 mt-8">
+          {/* <div className="space-y-6 mt-8">
             <Category />
-          </div>
+          </div> */}
         </div>
 
         {isLoading ? (
