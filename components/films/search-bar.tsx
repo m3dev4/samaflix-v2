@@ -1,7 +1,7 @@
 "use client"
 
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "../ui/input";
 
 interface SearchBarProps {
@@ -10,6 +10,25 @@ interface SearchBarProps {
 
 export function SearchBar({ onSearch }: SearchBarProps) {
   const [query, setQuery] = useState("");
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Recherche automatique avec debounce
+  useEffect(() => {
+    if (query.length > 2) {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+      debounceTimeout.current = setTimeout(() => {
+        onSearch(query);
+      }, 400); // délai de 400ms
+    }
+    // Nettoyage du timeout si composant démonte ou query change
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, [query, onSearch]);
 
   const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

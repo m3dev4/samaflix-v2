@@ -1,141 +1,157 @@
-'use client';
+"use client"
 
+import { useState } from "react"
+import { Filter, ChevronDown, Check } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { AnimatePresence } from 'framer-motion';
-import { ChevronDown, Filter } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu"
+import { motion } from "framer-motion"
 
 interface FilterSectionProps {
-  onFilterChange: (filterType: string, value: string) => void;
+  onFilterChange: (filterType: string, value: string) => void
+  activeFilter?: string
 }
 
-export function FilterSection({ onFilterChange }: FilterSectionProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+const genres = [
+  { id: "all", name: "Tous les genres" },
+  { id: "10759", name: "Action & Aventure" },
+  { id: "16", name: "Animation" },
+  { id: "35", name: "Comédie" },
+  { id: "80", name: "Crime" },
+  { id: "99", name: "Documentaire" },
+  { id: "18", name: "Drame" },
+  { id: "10751", name: "Famille" },
+  { id: "10762", name: "Enfants" },
+  { id: "9648", name: "Mystère" },
+  { id: "10763", name: "News" },
+  { id: "10764", name: "Reality" },
+  { id: "10765", name: "Science-Fiction & Fantastique" },
+  { id: "10766", name: "Soap" },
+  { id: "10767", name: "Talk" },
+  { id: "10768", name: "Guerre & Politique" },
+  { id: "37", name: "Western" },
+]
 
-  const genres = [
-    { id: 10759, name: 'Action & Adventure' },
-    { id: 16, name: 'Animation' },
-    { id: 35, name: 'Comedy' },
-    { id: 80, name: 'Crime' },
-    { id: 99, name: 'Documentary' },
-    { id: 18, name: 'Drama' },
-    { id: 10751, name: 'Family' },
-    { id: 27, name: 'Horror' },
-    { id: 9648, name: 'Mystery' },
-    { id: 10764, name: 'Reality' },
-    { id: 10765, name: 'Science Fiction & Fantasy' },
-    { id: 10749, name: 'Romance' },
-    { id: 53, name: 'Thriller' },
-    { id: 10768, name: 'War & Politics' }
-  ];
+const sortOptions = [
+  { id: "popularity.desc", name: "Popularité" },
+  { id: "vote_average.desc", name: "Note" },
+  { id: "first_air_date.desc", name: "Date de sortie" },
+]
 
-  const sortOptions = [
-    { value: 'popularity.desc', label: 'Most Popular' },
-    { value: 'vote_average.desc', label: 'Top Rated' },
-    { value: 'first_air_date.desc', label: 'Latest Releases' },
-    { value: 'horror', label: 'Horror' },
-  ];
+const years = [
+  { id: "all", name: "Toutes les années" },
+  ...Array.from({ length: 30 }, (_, i) => {
+    const year = new Date().getFullYear() - i
+    return { id: year.toString(), name: year.toString() }
+  }),
+]
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+export function FilterSection({ onFilterChange, activeFilter = "all" }: FilterSectionProps) {
+  const [selectedGenre, setSelectedGenre] = useState<string>("Tous les genres")
+  const [selectedSort, setSelectedSort] = useState<string>("Popularité")
+  const [selectedYear, setSelectedYear] = useState<string>("Toutes les années")
+
+  const handleGenreChange = (id: string, name: string) => {
+    setSelectedGenre(name)
+    onFilterChange("genre", id)
+  }
+
+  const handleSortChange = (id: string, name: string) => {
+    setSelectedSort(name)
+    onFilterChange("sort", id)
+  }
+
+  const handleYearChange = (id: string, name: string) => {
+    setSelectedYear(name)
+    onFilterChange("year", id)
+  }
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-black/10 backdrop-blur-lg border border-white/10 text-white/90 hover:bg-black/20 transition-colors"
-      >
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: 0.2 }}
+      className="flex flex-wrap gap-3 items-center"
+    >
+      <div className="flex items-center gap-2 text-sm text-foreground/60">
         <Filter className="h-4 w-4" />
-        Filters
-        <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
+        <span>Filtres:</span>
+      </div>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute z-50 mt-2 p-4 rounded-lg bg-black/90 backdrop-blur-xl border border-white/10 shadow-xl min-w-[300px]"
-          >
-            <div className="space-y-4">
-              <Select onValueChange={(value) => {
-                console.log("Selected genre:", value); // Debug
-                onFilterChange('genre', value);
-              }}>
-                <SelectTrigger className="w-full bg-transparent border-white/10 text-white">
-                  <SelectValue placeholder="Genre" />
-                </SelectTrigger>
-                <SelectContent className="bg-black/90 backdrop-blur-xl border-white/10">
-                  <SelectItem value="all" className="text-white hover:bg-white/10">
-                    Tous les genres
-                  </SelectItem>
-                  {genres.map((genre) => (
-                    <SelectItem
-                      key={genre.id}
-                      value={genre.id.toString()}
-                      className="text-white hover:bg-white/10"
-                    >
-                      {genre.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-9 gap-1 min-w-32 justify-between">
+            <span className="truncate">{selectedGenre}</span>
+            <ChevronDown className="h-4 w-4 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
+          <DropdownMenuLabel>Genres</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {genres.map((genre) => (
+            <DropdownMenuItem
+              key={genre.id}
+              onClick={() => handleGenreChange(genre.id, genre.name)}
+              className="flex items-center justify-between"
+            >
+              {genre.name}
+              {activeFilter === genre.id && <Check className="h-4 w-4 text-primary" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-              <Select onValueChange={(value) => onFilterChange('sort', value)}>
-                <SelectTrigger className="w-full bg-transparent border-white/10 text-white">
-                  <SelectValue placeholder="Sort By" />
-                </SelectTrigger>
-                <SelectContent className="bg-black/90 backdrop-blur-xl border-white/10">
-                  {sortOptions.map((option) => (
-                    <SelectItem
-                      key={option.value}
-                      value={option.value}
-                      className="text-white hover:bg-white/10"
-                    >
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-9 gap-1 min-w-32 justify-between">
+            <span className="truncate">{selectedSort}</span>
+            <ChevronDown className="h-4 w-4 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>Trier par</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {sortOptions.map((option) => (
+            <DropdownMenuItem
+              key={option.id}
+              onClick={() => handleSortChange(option.id, option.name)}
+              className="flex items-center justify-between"
+            >
+              {option.name}
+              {selectedSort === option.name && <Check className="h-4 w-4 text-primary" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-              <Select onValueChange={(value) => onFilterChange('year', value)}>
-                <SelectTrigger className="w-full bg-transparent border-white/10 text-white">
-                  <SelectValue placeholder="Year" />
-                </SelectTrigger>
-                <SelectContent className="bg-black/90 backdrop-blur-xl border-white/10">
-                  {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map(
-                    (year) => (
-                      <SelectItem
-                        key={year}
-                        value={year.toString()}
-                        className="text-white hover:bg-white/10"
-                      >
-                        {year}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-9 gap-1 min-w-32 justify-between">
+            <span className="truncate">{selectedYear}</span>
+            <ChevronDown className="h-4 w-4 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
+          <DropdownMenuLabel>Année</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {years.map((year) => (
+            <DropdownMenuItem
+              key={year.id}
+              onClick={() => handleYearChange(year.id, year.name)}
+              className="flex items-center justify-between"
+            >
+              {year.name}
+              {activeFilter === year.id && <Check className="h-4 w-4 text-primary" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </motion.div>
+  )
 }

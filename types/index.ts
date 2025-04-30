@@ -70,6 +70,7 @@ export interface StreamingSource {
   player?: string;
   quality?: string;
   lang?: string;
+  
 }
 
 export interface Provider {

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import PlatformList from "../../../components/films/platform-list";
 import { SearchBar } from "../../../components/films/search-bar";
@@ -30,23 +30,24 @@ interface Movie {
 }
 
 // Composant pour le chargement progressif des sections
-const LazyMovieSection = ({ category, movies }: { category: string; movies: Movie[] }) => {
+const LazyMovieSection = ({
+  category,
+  movies,
+}: {
+  category: string;
+  movies: Movie[];
+}) => {
   const { ref, inView } = useInView({
     threshold: 0,
     triggerOnce: true,
-    rootMargin: '100px',
+    rootMargin: "100px",
   });
 
   return (
     <div ref={ref}>
       {inView && (
-        <section 
-          id={category.toLowerCase().replace(/\s+/g, '-')}
-        >
-          <MovieCaroussel 
-            title={category}
-            movies={movies}
-          />
+        <section id={category.toLowerCase().replace(/\s+/g, "-")}>
+          <MovieCaroussel title={category} movies={movies} />
         </section>
       )}
     </div>
@@ -54,7 +55,9 @@ const LazyMovieSection = ({ category, movies }: { category: string; movies: Movi
 };
 
 const PageMovies = () => {
-  const [categoryMovies, setCategoryMovies] = useState<{ [key: string]: Movie[] }>({});
+  const [categoryMovies, setCategoryMovies] = useState<{
+    [key: string]: Movie[];
+  }>({});
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
@@ -66,54 +69,64 @@ const PageMovies = () => {
   });
 
   // Fonction mémorisée pour filtrer les films par plateforme
-  const filterMoviesByPlatform = useMemo(() => (movies: Movie[], platform: string | null): Movie[] => {
-    if (!platform) return movies;
-    
-    // Fonction helper pour normaliser les noms des providers
-    const normalizeProviderName = (name: string) => {
-      const platformMap: { [key: string]: string[] } = {
-        'Netflix': ['Netflix'],
-        'Apple TV+': ['Apple TV Plus', 'Apple TV+', 'Apple TV'],
-        'Max': ['HBO Max', 'Max'],
-        'Prime Video': ['Amazon Prime Video', 'Prime Video', 'Amazon Video'],
-        'Disney+': ['Disney Plus', 'Disney+'],
-        'Paramount+': ['Paramount Plus', 'Paramount+'],
-        'Hulu': ['Hulu']
-      };
-  
-      return platformMap[platform] || [platform];
-    };
-  
-    const platformNames = normalizeProviderName(platform);
-    
-    return movies.filter(movie => {
-      const providers = movie.providers?.FR;
-      
-      if (!providers) return false;
-  
-      // Vérifier dans toutes les catégories de providers
-      const allProviders = [
-        ...(providers.flatrate || []),
-        ...(providers.free || []),
-        ...(providers.ads || []),
-      ];
-  
-      return allProviders.some(provider => 
-        platformNames.some(name => 
-          provider.provider_name.toLowerCase() === name.toLowerCase()
-        )
-      );
-    });
-  }, []);
+  const filterMoviesByPlatform = useMemo(
+    () =>
+      (movies: Movie[], platform: string | null): Movie[] => {
+        if (!platform) return movies;
+
+        // Fonction helper pour normaliser les noms des providers
+        const normalizeProviderName = (name: string) => {
+          const platformMap: { [key: string]: string[] } = {
+            Netflix: ["Netflix"],
+            "Apple TV+": ["Apple TV Plus", "Apple TV+", "Apple TV"],
+            Max: ["HBO Max", "Max"],
+            "Prime Video": [
+              "Amazon Prime Video",
+              "Prime Video",
+              "Amazon Video",
+            ],
+            "Disney+": ["Disney Plus", "Disney+"],
+            "Paramount+": ["Paramount Plus", "Paramount+"],
+            Hulu: ["Hulu"],
+          };
+
+          return platformMap[platform] || [platform];
+        };
+
+        const platformNames = normalizeProviderName(platform);
+
+        return movies.filter((movie) => {
+          const providers = movie.providers?.FR;
+
+          if (!providers) return false;
+
+          // Vérifier dans toutes les catégories de providers
+          const allProviders = [
+            ...(providers.flatrate || []),
+            ...(providers.free || []),
+            ...(providers.ads || []),
+          ];
+
+          return allProviders.some((provider) =>
+            platformNames.some(
+              (name) =>
+                provider.provider_name.toLowerCase() === name.toLowerCase(),
+            ),
+          );
+        });
+      },
+    [],
+  );
 
   useEffect(() => {
     if (selectedPlatform) {
-    console.log('Filtered Movies:', 
+      console.log(
+        "Filtered Movies:",
         Object.entries(categoryMovies).map(([category, movies]) => ({
           category,
           count: filterMoviesByPlatform(movies, selectedPlatform).length,
-          totalMovies: movies.length
-        }))
+          totalMovies: movies.length,
+        })),
       );
     }
   }, [selectedPlatform, categoryMovies, filterMoviesByPlatform]);
@@ -123,9 +136,9 @@ const PageMovies = () => {
     const fetchMoviesData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Vérifier le cache
-        const cachedData = sessionStorage.getItem('moviesData');
+        const cachedData = sessionStorage.getItem("moviesData");
         if (cachedData) {
           setCategoryMovies(JSON.parse(cachedData));
           setIsLoading(false);
@@ -138,22 +151,21 @@ const PageMovies = () => {
           "Top Rated": data.topRated,
           "Most Popular": data.popularMovies,
           "Action & Adventure": data.actionAndAdventure,
-          "Animation": data.animation,
-          "Comedy": data.comedy,
-          "Crime": data.crime,
-          "Documentary": data.documentary,
-          "Drama": data.drama,
-          "Horror": data.horror,
-          "Family": data.family,
-          "Romance": data.romance,
+          Animation: data.animation,
+          Comedy: data.comedy,
+          Crime: data.crime,
+          Documentary: data.documentary,
+          Drama: data.drama,
+          Horror: data.horror,
+          Family: data.family,
+          Romance: data.romance,
           "Mystery & Thriller": data.mysteryAndThriller,
           "Sci-Fi": data.scifi,
-          "War": data.war,
-          
+          War: data.war,
         };
 
         // Mettre en cache les données
-        sessionStorage.setItem('moviesData', JSON.stringify(categorizedMovies));
+        sessionStorage.setItem("moviesData", JSON.stringify(categorizedMovies));
         setCategoryMovies(categorizedMovies);
       } catch (error) {
         console.error("Erreur lors du chargement des films:", error);
@@ -167,10 +179,15 @@ const PageMovies = () => {
 
   // Mémoriser les films filtrés pour chaque catégorie
   const filteredCategories = useMemo(() => {
-    return categories.map(category => ({
-      category,
-      movies: filterMoviesByPlatform(categoryMovies[category] || [], selectedPlatform)
-    })).filter(({ movies }) => movies.length > 0);
+    return categories
+      .map((category) => ({
+        category,
+        movies: filterMoviesByPlatform(
+          categoryMovies[category] || [],
+          selectedPlatform,
+        ),
+      }))
+      .filter(({ movies }) => movies.length > 0);
   }, [categories, categoryMovies, selectedPlatform, filterMoviesByPlatform]);
 
   const handleSearch = async (query: string) => {
@@ -226,10 +243,12 @@ const PageMovies = () => {
         <div ref={headerRef}>
           <section className="text-center  space-y-4 my-32">
             <h1 className="text-6xl font-bold text-primary">Films</h1>
-            <p className="text-xl text-primary">Explore une large selection de films</p>
+            <p className="text-xl text-primary">
+              Explore une large selection de films
+            </p>
             <SearchBar onSearch={handleSearch} />
           </section>
-          
+
           <div className="space-y-6 mt-8">
             {/* <PlatformList 
               selectedPlatform={selectedPlatform}
@@ -238,7 +257,7 @@ const PageMovies = () => {
             <Category />
           </div>
         </div>
-        
+
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -247,26 +266,22 @@ const PageMovies = () => {
           <div className="space-y-16">
             {isSearching && <div className="text-center">Searching...</div>}
             {searchResults.length > 0 ? (
-              <MovieCaroussel 
+              <MovieCaroussel
                 title="Search Results"
                 movies={searchResults}
+                className="overflow-x-auto"
               />
             ) : (
-              !isSearching && (
-                <div className="text-center"></div>
-              )
+              !isSearching && <div className="text-center"></div>
             )}
             {filteredCategories.map(({ category, movies }) => (
-              <Suspense 
-                key={category} 
+              <Suspense
+                key={category}
                 fallback={
                   <div className="h-[300px] animate-pulse bg-gray-800 rounded-lg" />
                 }
               >
-                <LazyMovieSection 
-                  category={category}
-                  movies={movies}
-                />
+                <LazyMovieSection category={category} movies={movies} />
               </Suspense>
             ))}
           </div>

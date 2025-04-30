@@ -7,6 +7,7 @@ import { ChevronLeft, Star, Play, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { ThemeColorToggle } from "@/components/themes/theme-color-toggle";
 import { toast } from "sonner";
+import { getMultipleProviderStreaming } from "@/utils/providers/streamingProvider";
 
 interface Episode {
   id: number;
@@ -153,20 +154,17 @@ export default function SeriesDetailsPage() {
         episode: episode.episode_number
       });
       
-      const sources = await extractDuLourd(
+      // Utiliser le système de providers multiples avec fallback
+      const bestProvider = await getMultipleProviderStreaming(
         series.name,
         selectedSeason,
         episode.episode_number
       );
       
-      console.log("Stream sources found:", sources);
+      console.log("Best streaming source found:", bestProvider);
       
-      if (sources && sources.length > 0) {
+      if (bestProvider) {
         toast.dismiss(loadingToast);
-        // Sélectionner le meilleur provider disponible
-        const bestProvider = sources.find(s => s.player === 'uqload' && s.quality === '1080p') || 
-                           sources.find(s => s.player === 'uqload') ||
-                           sources[0];
         
         toast.success("Flux trouvé ! Lancement de la vidéo...", {
           duration: 2000
