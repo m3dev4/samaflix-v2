@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import fs from 'fs';
 import path from 'path';
 
-export const runtime = 'edge';
+
 
 const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const TMDB_API_URL = "https://api.themoviedb.org/3";

@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 
-export const runtime = 'edge';
-
 // Helper to safely decode HTML entities
 function decodeHTML(html: string): string {
   return html

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import fs from 'fs';
 import path from 'path';
 
-export const runtime = 'edge';
+
 
 interface Update {
   old: string;

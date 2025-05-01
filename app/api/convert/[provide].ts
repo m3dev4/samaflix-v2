@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
-export const runtime = 'edge';
+
 
 // Exemple pour uqload
 export async function GET(req: NextApiRequest, res: NextApiResponse) {

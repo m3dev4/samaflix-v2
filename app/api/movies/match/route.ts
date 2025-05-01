@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import fs from 'fs';
 import path from 'path';
 
-export const runtime = 'edge';
+
 
 // Fonction pour normaliser les titres
 function normalizeTitle(title: string): string {
