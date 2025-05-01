@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 
-export const config = {
-  runtime: 'edge',
-  regions: ['cdg1'], // Région de Paris pour la France
-};
-
+export const runtime = 'edge';
 const CHUNK_SIZE = 512 * 1024; // Réduction à 512KB pour Vercel
 const MAX_CHUNK_SIZE = 2 * 1024 * 1024; // 2MB maximum
 

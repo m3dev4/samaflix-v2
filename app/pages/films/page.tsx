@@ -12,7 +12,6 @@ import { useInView } from "react-intersection-observer";
 import Link from "next/link";
 import { ThemeColorToggle } from "@/components/themes/theme-color-toggle";
 import type { Metadata } from "next";
-
 interface Movie {
   id: number;
   title: string;
