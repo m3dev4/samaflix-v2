@@ -230,10 +230,27 @@ export default function setGlobalColorThemes(
   themeMode: "light" | "dark",
   color: ThemesColor,
 ) {
+  // Vérifier que le thème et la couleur existent
+  if (!themes[color]) {
+    console.warn(`Theme color "${color}" not found. Using default.`);
+    color = "Zinc"; // Utiliser une couleur par défaut
+  }
+  
+  if (!themes[color][themeMode]) {
+    console.warn(`Theme mode "${themeMode}" not found for color "${color}". Using light mode.`);
+    themeMode = "light"; // Utiliser le mode clair par défaut
+  }
+  
   const theme = themes[color][themeMode] as {
     [key: string]: string;
   };
-  for (const key in theme) {
-    document.documentElement.style.setProperty(`--${key}`, theme[key]);
+  
+  // Vérifier que theme est défini avant d'itérer dessus
+  if (theme) {
+    for (const key in theme) {
+      document.documentElement.style.setProperty(`--${key}`, theme[key]);
+    }
+  } else {
+    console.error(`Unable to load theme: ${color}, ${themeMode}`);
   }
 }

@@ -20,6 +20,11 @@ async function fetchWithCache(url: string) {
     const res = await fetch(url);
     if (!res.ok) {
       console.error(`TMDB API Error: ${res.status} for URL: ${url}`);
+      // Cache également les réponses négatives pour éviter de refaire la même requête
+      if (res.status === 404) {
+        API_CACHE[url] = { data: { results: [] }, timestamp: now };
+        return { results: [] };
+      }
       throw new Error(`API error: ${res.status}`);
     }
     const data = await res.json();
@@ -28,6 +33,8 @@ async function fetchWithCache(url: string) {
     return data;
   } catch (error) {
     console.error('Failed to fetch data:', error);
+    // Cache les erreurs pour éviter de refaire la même requête
+    API_CACHE[url] = { data: { results: [] }, timestamp: now };
     return { results: [] }; // Return empty results instead of throwing
   }
 }
@@ -40,21 +47,37 @@ async function fetchMovieProviders(movieId: number) {
     return data.results?.FR || null; // Retourne spécifiquement les providers français
   } catch (error) {
     console.error(`Error fetching providers for movie ${movieId}:`, error);
-    return null;
+    return null; // Retourne null en cas d'erreur pour ne pas bloquer l'application
   }
 }
 
 // Fonction utilitaire pour enrichir les résultats avec les providers
 export async function enrichMoviesWithProviders(movies: any[]) {
-  const enrichedMovies = await Promise.all(
-    movies.map(async (movie) => {
-      const providers = await fetchMovieProviders(movie.id);
-      return {
-        ...movie,
-        providers: providers ? { FR: providers } : null
-      };
-    })
-  );
+  // Limiter le nombre d'appels parallèles pour éviter de surcharger l'API
+  const batchSize = 5;
+  const enrichedMovies = [];
+  
+  // Traiter les films par lots
+  for (let i = 0; i < movies.length; i += batchSize) {
+    const batch = movies.slice(i, i + batchSize);
+    const enrichedBatch = await Promise.all(
+      batch.map(async (movie) => {
+        try {
+          const providers = await fetchMovieProviders(movie.id);
+          return {
+            ...movie,
+            providers: providers ? { FR: providers } : null
+          };
+        } catch (error) {
+          // Éviter qu'une erreur ne bloque tout le lot
+          console.error(`Error enriching movie ${movie.id}:`, error);
+          return { ...movie, providers: null };
+        }
+      })
+    );
+    enrichedMovies.push(...enrichedBatch);
+  }
+  
   return enrichedMovies;
 }
 

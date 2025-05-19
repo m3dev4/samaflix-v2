@@ -45,12 +45,12 @@ export function MovieCard({ movie, priority = false }: MovieCardProps) {
         whileHover={{ scale: 1.05 }}
         className="group relative rounded-lg overflow-hidden cursor-pointer"
       >
-        <div className="aspect-[2/3] overflow-hidden rounded-lg bg-gray-900">
+        <div className="aspect-[2/3] overflow-hidden rounded-lg bg-gray-900 min-w-[180px] md:min-w-[160px] lg:min-w-[190px]">
           <Image
-            src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+            src={`https://image.tmdb.org/t/p/w780${movie.poster_path}`}
             alt={movie.title}
-            width={500}
-            height={750}
+            width={780}
+            height={1170}
             className={`h-full w-full object-cover transition-all duration-300 group-hover:scale-110 ${
               imageLoaded ? 'opacity-100' : 'opacity-0'
             }`}

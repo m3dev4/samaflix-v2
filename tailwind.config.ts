@@ -73,6 +73,10 @@ export default {
     backgroundImage: {
       "gradient-custom": "linear-gradient(135deg, #121212, #1E1E1E, #292929)",
       "gradient-custom-reverse": "linear-gradient(45deg, black, transparent)",
+      "gradient-custom-hero":
+        "linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.8) 100%)",
+      "gradient-custom-hero-reverse":
+        "linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.5) 100%)",
     },
     fontFamily: {
       popins: ["Poppins", "sans-serif"],

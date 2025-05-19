@@ -52,7 +52,7 @@ export function SeriesCard({ series, priority = false }: SeriesCardProps) {
           y: -5,
         }}
       >
-        <div className="aspect-[2/3] overflow-hidden rounded-xl bg-gray-900/80">
+        <div className="aspect-[2/3] overflow-hidden rounded-lg bg-gray-900 min-w-[180px] md:min-w-[220px] lg:min-w-[240px]">
           {series.poster_path ? (
             <Image
               src={`https://image.tmdb.org/t/p/w500${series.poster_path}`}
