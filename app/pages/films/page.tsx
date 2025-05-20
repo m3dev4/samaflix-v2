@@ -12,6 +12,7 @@ import { useInView } from "react-intersection-observer";
 import Link from "next/link";
 import { ThemeColorToggle } from "@/components/themes/theme-color-toggle";
 import type { Metadata } from "next";
+import Navbar from "@/components/navbar";
 interface Movie {
   id: number;
   title: string;
@@ -32,9 +33,13 @@ interface Movie {
 const LazyMovieSection = ({
   category,
   movies,
+  viewMode,
+  onViewChange,
 }: {
   category: string;
   movies: Movie[];
+  viewMode: "grid" | "row";
+  onViewChange: (category: string, view: "grid" | "row") => void;
 }) => {
   const { ref, inView } = useInView({
     threshold: 0,
@@ -46,7 +51,12 @@ const LazyMovieSection = ({
     <div ref={ref}>
       {inView && (
         <section id={category.toLowerCase().replace(/\s+/g, "-")}>
-          <MovieCaroussel title={category} movies={movies} />
+          <MovieCaroussel 
+            title={category} 
+            movies={movies} 
+            viewMode={viewMode}
+            onViewChange={onViewChange}
+          />
         </section>
       )}
     </div>
@@ -61,6 +71,9 @@ const PageMovies = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
+  const [categoryViewModes, setCategoryViewModes] = useState<{
+    [key: string]: "grid" | "row";
+  }>({});
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { ref: headerRef, inView: headerInView } = useInView({
     threshold: 0,
@@ -185,9 +198,18 @@ const PageMovies = () => {
           categoryMovies[category] || [],
           selectedPlatform,
         ),
+        viewMode: categoryViewModes[category] || "row",
       }))
       .filter(({ movies }) => movies.length > 0);
-  }, [categories, categoryMovies, selectedPlatform, filterMoviesByPlatform]);
+  }, [categories, categoryMovies, selectedPlatform, filterMoviesByPlatform, categoryViewModes]);
+  
+  // Gérer le changement de mode d'affichage pour une catégorie
+  const handleViewModeChange = (category: string, viewMode: "grid" | "row") => {
+    setCategoryViewModes((prev) => ({
+      ...prev,
+      [category]: viewMode,
+    }));
+  };
 
   const handleSearch = async (query: string) => {
     if (query.length > 2) {
@@ -207,37 +229,7 @@ const PageMovies = () => {
 
   return (
     <main className="min-h-screen bg-gradient-custom text-primary font-popins overflow-x-hidden">
-      <header className="fixed w-full top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/40 shadow-sm">
-        <div className="container mx-auto">
-          <nav className="flex items-center justify-between py-4">
-            <ul className="flex items-center gap-8">
-              <li className="flex items-center space-x-6">
-                <Link
-                  href="/"
-                  className="text-2xl font-bold hover:text-primary transition-colors"
-                >
-                  Samaflix
-                </Link>
-                <Link
-                  href="/pages/films"
-                  className="text-lg font-medium hover:text-primary transition-colors"
-                >
-                  Films
-                </Link>
-                <Link
-                  href="/pages/series"
-                  className="text-lg font-medium hover:text-primary transition-colors"
-                >
-                  Séries
-                </Link>
-              </li>
-            </ul>
-            <div className="flex items-center space-x-4">
-              <ThemeColorToggle />
-            </div>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
       <div className="container mx-auto px-4 py-8 space-y-12">
         <div ref={headerRef}>
           <section className="text-center  space-y-4 my-32">
@@ -273,14 +265,21 @@ const PageMovies = () => {
             ) : (
               !isSearching && <div className="text-center"></div>
             )}
-            {filteredCategories.map(({ category, movies }) => (
+            {filteredCategories.map((item) => (
               <Suspense
-                key={category}
+                key={item.category}
                 fallback={
                   <div className="h-[300px] animate-pulse bg-gray-800 rounded-lg" />
                 }
               >
-                <LazyMovieSection category={category} movies={movies} />
+                <div className="mb-10">
+                  <LazyMovieSection
+                    category={item.category}
+                    movies={item.movies}
+                    viewMode={item.viewMode}
+                    onViewChange={handleViewModeChange}
+                  />
+                </div>
               </Suspense>
             ))}
           </div>

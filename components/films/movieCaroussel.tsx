@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { MovieCard, MovieCardSkeleton } from "./movie-card";
 import { useInView } from "react-intersection-observer";
+import ViewToggle from "../veiwToggle";
 
 interface MovieProvider {
   provider_name: string;
@@ -36,6 +37,8 @@ interface MovieCarousselProps {
   movies?: Movie[];
   className?: string;
   selectedPlatform?: string | null;
+  viewMode?: "grid" | "row";
+  onViewChange?: (category: string, view: "grid" | "row") => void;
 }
 
 const VISIBLE_ITEMS = 5;
@@ -45,6 +48,8 @@ const MovieCaroussel = ({
   movies = [],
   className = "",
   selectedPlatform,
+  viewMode = "row",
+  onViewChange,
 }: MovieCarousselProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -139,17 +144,45 @@ const MovieCaroussel = ({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl text-primary font-popins">
-        {title} {movies.length > 0 && `(${movies.length})`}
-      </h2>
-      <div className="relative group">
-        <div
-          ref={scrollRef}
-          className={`flex overflow-hidden gap-4 scrollbar-hide snap-x snap-mandatory ${className}`}
-          onScroll={handleScroll}
-        >
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl text-primary font-popins">
+          {title} {movies.length > 0 && `(${movies.length})`}
+        </h2>
+        {onViewChange && (
+          <ViewToggle
+            currentView={viewMode}
+            onViewChange={(view) => onViewChange(title, view)}
+          />
+        )}
+      </div>
+      {viewMode === "row" ? (
+        <div className="relative group">
+          <div
+            ref={scrollRef}
+            className={`flex overflow-x-auto overflow-y-hidden gap-4 scrollbar-hide snap-x snap-mandatory ${className}`}
+            onScroll={handleScroll}
+          >
+            {movies.map((movie, index) => (
+              <div key={movie.id} className="flex-none w-[200px] snap-start">
+                <MovieCard
+                  movie={{
+                    id: movie.id,
+                    title: movie.title || movie.name || "",
+                    poster_path: movie.poster_path,
+                    vote_average: movie.vote_average,
+                    release_date: movie.release_date,
+                    providers: movie.providers?.FR, // Pass the FR providers to the MovieCard
+                  }}
+                  priority={index < VISIBLE_ITEMS}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {movies.map((movie, index) => (
-            <div key={movie.id} className="flex-none w-[200px] snap-start">
+            <div key={movie.id}>
               <MovieCard
                 movie={{
                   id: movie.id,
@@ -157,37 +190,41 @@ const MovieCaroussel = ({
                   poster_path: movie.poster_path,
                   vote_average: movie.vote_average,
                   release_date: movie.release_date,
-                  providers: movie.providers?.FR, // Pass the FR providers to the MovieCard
+                  providers: movie.providers?.FR,
                 }}
                 priority={index < VISIBLE_ITEMS}
               />
             </div>
           ))}
         </div>
+      )}
 
-        {currentIndex > 0 && (
-          <button
-            onClick={() => scroll("left")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
-            disabled={isScrolling || currentIndex === 0}
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-        )}
+      {viewMode === "row" && (
+        <div className="relative">
+          {currentIndex > 0 && (
+            <button
+              onClick={() => scroll("left")}
+              className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+              disabled={isScrolling || currentIndex === 0}
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
 
-        {currentIndex < movies.length - VISIBLE_ITEMS && (
-          <button
-            onClick={() => scroll("right")}
-            className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
-            disabled={
-              isScrolling || currentIndex >= movies.length - VISIBLE_ITEMS
-            }
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
-        )}
+          {currentIndex < movies.length - VISIBLE_ITEMS && (
+            <button
+              onClick={() => scroll("right")}
+              className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+              disabled={
+                isScrolling || currentIndex >= movies.length - VISIBLE_ITEMS
+              }
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          )}
+        </div>
+      )}
       </div>
-    </div>
   );
 };
 

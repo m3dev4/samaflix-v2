@@ -11,6 +11,7 @@ import { getSeriesByProviderAndRegion } from "@/components/getMovie";
 import { useInView } from "react-intersection-observer";
 import Link from "next/link";
 import { ThemeColorToggle } from "@/components/themes/theme-color-toggle";
+import Navbar from "@/components/navbar";
 
 interface Series {
   id: number;
@@ -203,37 +204,7 @@ const PageSeries = () => {
 
   return (
     <main className="min-h-screen bg-gradient-custom text-primary font-popins overflow-x-hidden">
-      <header className="fixed w-full top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/40 shadow-sm">
-        <div className="container mx-auto">
-          <nav className="flex items-center justify-between py-4">
-            <ul className="flex items-center gap-8">
-              <li className="flex items-center space-x-6">
-                <Link
-                  href="/"
-                  className="text-2xl font-bold hover:text-primary transition-colors"
-                >
-                  Samaflix
-                </Link>
-                <Link
-                  href="/pages/films"
-                  className="text-lg font-medium hover:text-primary transition-colors"
-                >
-                  Films
-                </Link>
-                <Link
-                  href="/pages/series"
-                  className="text-lg font-medium hover:text-primary transition-colors"
-                >
-                  Séries
-                </Link>
-              </li>
-            </ul>
-            <div className="flex items-center space-x-4">
-              <ThemeColorToggle />
-            </div>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
       <div className="container mx-auto px-4 py-8 space-y-12">
         <div ref={headerRef}>
           <section className="text-center space-y-4 my-32">
