@@ -1,28 +1,22 @@
 import React from "react";
 import { Button } from "./ui/button";
 import { ChevronRight } from "lucide-react";
-import Image from "next/image";
-import { getImageUrl } from "@/utils/tmdb";
 import Link from "next/link";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
-import { MovieCard } from "./films/movie-card";
-interface ContentRowProps {
+import { SeriesCard } from "./series/series-card";
+import { Series } from "@/types";
+
+interface SeriesRowProps {
   title: string;
-  items: Array<{
-    id: number;
-    title: string;
-    name?: string;
-    poster_path: string;
-    vote_average: number;
-    release_date?: string;
-  }>;
+  items: Series[];
 }
-const ContentRow = ({ title, items }: ContentRowProps) => {
+
+const SeriesRow = ({ title, items }: SeriesRowProps) => {
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">{title}</h2>
-        <Link href="/pages/films">
+        <Link href="/pages/series">
           <Button variant="link" className="text-sm">
             Voir Tout
             <ChevronRight className="w-4 h-4" />
@@ -33,16 +27,13 @@ const ContentRow = ({ title, items }: ContentRowProps) => {
       <ScrollArea className="w-full whitespace-nowrap pb-6">
         <div className="flex gap-5 px-1">
           {items.map((item) => (
-            <MovieCard
-              key={item.id}
-              movie={{
-                id: item.id,
-                title: item.title || item.name || "",
-                poster_path: item.poster_path,
-                vote_average: item.vote_average,
-                release_date: item.release_date || "",
-              }}
-            />
+            <SeriesCard key={item.id} series={{
+              id: item.id,
+              title: item.name,
+              poster_path: item.poster_view,
+              vote_average: item.vote_average,
+              first_air_date: item.first_air_date,
+            }} />
           ))}
         </div>
         <ScrollBar orientation="horizontal" />
@@ -51,4 +42,4 @@ const ContentRow = ({ title, items }: ContentRowProps) => {
   );
 };
 
-export default ContentRow;
+export default SeriesRow;

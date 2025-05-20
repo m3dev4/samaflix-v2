@@ -2,14 +2,20 @@ import React from "react";
 import { getImageUrl } from "@/utils/tmdb";
 import Image from "next/image";
 import { Button } from "./ui/button";
-import { FaInfoCircle } from "react-icons/fa";
+import { FaInfoCircle, FaPlay } from "react-icons/fa";
 import { getMovies } from "./getMovie";
 import Link from "next/link";
+import { Badge } from "./ui/badge";
+import { Info, Play, Star } from "lucide-react";
 
 const StreamingUi = async () => {
   const { hero } = await getMovies();
   return (
-    <div>
+    <div className="relative w-full h-full">
+      <div className="absolute inset-0 z-10 bg-gradient-custom-hero to-transparent" />
+
+      {/* Gradient horizontal - de gauche à droite */}
+      <div className="absolute inset-0 z-10 bg-gradient-custom-hero-reverse to-transparent" />
       <Image
         src={getImageUrl(hero.backdrop_path || "placeholder.svg")}
         alt={hero.title}
@@ -17,36 +23,46 @@ const StreamingUi = async () => {
         className="object-cover"
         priority
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
 
-      <div className="absolute bottom-0 left-0 right-0 p-8 space-y-4">
-        <h1 className="text-5xl md:text-6xl text-primary font-bold tracking-tighter">
+      <div className="absolute bottom-0 left-0 right-0 z-20 p-6 md:p-12 max-w-2xl space-y-4">
+        <h1 className="text-4xl md:text-6xl text-primary font-bold tracking-tighter">
           {hero.title}
         </h1>
 
-        <div className="flex items-center gap-2 text-sm text-primary">
+        <div className="flex items-center flex-wrap gap-3 text-sm text-primary">
           <span>{hero ? "TV-MA" : "TV-14"}</span>
           <span>{new Date(hero.release_date).getFullYear()}</span>
-          <span>HDR</span>
-          <span>
-            {hero.vote_average.toFixed(1)}{" "}
-            <span className="text-yellow-500">★</span>
-          </span>
+          <Badge
+            className="border-yellow-500 text-yellow-400"
+            variant="outline"
+          >
+            HD
+          </Badge>
+          <div className="flex items-center ">
+            <span className="text-yellow-400 mr-1">
+              {hero.vote_average.toFixed(1)}{" "}
+            </span>
+            <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+          </div>
         </div>
-        <p className="max-w-xl text-primary font-bold">{hero.overview}</p>
-        <div className="flex items-center gap-3">
-          {/* <Link href={`/watch/${hero.id}?title=${encodeURIComponent(hero.title)}&description=${encodeURIComponent(hero.overview)}`}>
-            <Button className="bg-slate-900 text-primary font-bold font-popins hover:bg-slate-900/90">
-              <FaPlay className="w-4 h-4 mr-2" />
+        <p className="text-gray-300 line-clamp-3 md:line-clamp-4">
+          {hero.overview}
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={`/watch/${hero.id}?title=${encodeURIComponent(hero.title)}&description=${encodeURIComponent(hero.overview)}`}
+          >
+            <Button className="bg-rose-600 hover:bg-rose-700 text-white font-bold font-popins">
+              <Play className="w-4 h-4 mr-2 font-extrabold" />
               Lecture
             </Button>
-          </Link> */}
+          </Link>
           <Link href={`/movie/${hero.id}`}>
             <Button
-              className="bg-white/20 hover:bg-white/30 font-bold font-popins"
+              className="border-gray-700 bg-gray-900/60 backdrop-blur-sm hover:bg-gray-800"
               variant="secondary"
             >
-              <FaInfoCircle className="w-4 h-4 mr-2" />
+              <Info className="w-4 h-4 mr-2" />
               Plus d&apos;infos
             </Button>
           </Link>

@@ -31,8 +31,16 @@ export default function ThemeDataProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     if (themeColor && typeof window !== "undefined") {
       localStorage.setItem("themeColor", themeColor);
+      
+      // S'assurer que le mode de thème est valide (light ou dark)
+      const validThemeMode = resolvedTheme === "light" || resolvedTheme === "dark" 
+        ? resolvedTheme 
+        : theme === "light" || theme === "dark" 
+          ? theme 
+          : "light"; // Valeur par défaut si aucun thème valide n'est trouvé
+      
       setGlobalColorThemes(
-        (resolvedTheme || theme) as "light" | "dark",
+        validThemeMode as "light" | "dark",
         themeColor
       );
     }

@@ -20,6 +20,11 @@ async function fetchWithCache(url: string) {
     const res = await fetch(url);
     if (!res.ok) {
       console.error(`TMDB API Error: ${res.status} for URL: ${url}`);
+      // Cache également les réponses négatives pour éviter de refaire la même requête
+      if (res.status === 404) {
+        API_CACHE[url] = { data: { results: [] }, timestamp: now };
+        return { results: [] };
+      }
       throw new Error(`API error: ${res.status}`);
     }
     const data = await res.json();
@@ -28,6 +33,8 @@ async function fetchWithCache(url: string) {
     return data;
   } catch (error) {
     console.error('Failed to fetch data:', error);
+    // Cache les erreurs pour éviter de refaire la même requête
+    API_CACHE[url] = { data: { results: [] }, timestamp: now };
     return { results: [] }; // Return empty results instead of throwing
   }
 }
@@ -40,21 +47,37 @@ async function fetchMovieProviders(movieId: number) {
     return data.results?.FR || null; // Retourne spécifiquement les providers français
   } catch (error) {
     console.error(`Error fetching providers for movie ${movieId}:`, error);
-    return null;
+    return null; // Retourne null en cas d'erreur pour ne pas bloquer l'application
   }
 }
 
 // Fonction utilitaire pour enrichir les résultats avec les providers
 export async function enrichMoviesWithProviders(movies: any[]) {
-  const enrichedMovies = await Promise.all(
-    movies.map(async (movie) => {
-      const providers = await fetchMovieProviders(movie.id);
-      return {
-        ...movie,
-        providers: providers ? { FR: providers } : null
-      };
-    })
-  );
+  // Limiter le nombre d'appels parallèles pour éviter de surcharger l'API
+  const batchSize = 5;
+  const enrichedMovies = [];
+  
+  // Traiter les films par lots
+  for (let i = 0; i < movies.length; i += batchSize) {
+    const batch = movies.slice(i, i + batchSize);
+    const enrichedBatch = await Promise.all(
+      batch.map(async (movie) => {
+        try {
+          const providers = await fetchMovieProviders(movie.id);
+          return {
+            ...movie,
+            providers: providers ? { FR: providers } : null
+          };
+        } catch (error) {
+          // Éviter qu'une erreur ne bloque tout le lot
+          console.error(`Error enriching movie ${movie.id}:`, error);
+          return { ...movie, providers: null };
+        }
+      })
+    );
+    enrichedMovies.push(...enrichedBatch);
+  }
+  
   return enrichedMovies;
 }
 
@@ -83,9 +106,59 @@ export async function fetchTopRated() {
   return fetchWithCache(url);
 }
 
-export async function searchMovies(query: string) {
-  const url = `${TMDB_API_URL}/search/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&query=${query}&language=fr-FR`;
+export async function searchMovies(query: string, page: number = 1) {
+  const url = `${TMDB_API_URL}/search/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&query=${query}&language=fr-FR&page=${page}`;
   return fetchWithCache(url);
+}
+
+// Fonction pour obtenir des films par catégorie avec pagination
+export async function getMoviesByCategory(category: string, page: number = 1): Promise<any[]> {
+  try {
+    let url = '';
+    const genreMap: Record<string, string> = {
+      'action_adventure': '12,28',
+      'animation': '16',
+      'comedy': '35',
+      'crime': '80',
+      'documentary': '99',
+      'drama': '18',
+      'horror': '27',
+      'family': '10751',
+      'romance': '10749',
+      'mystery_thriller': '9648,53',
+      'reality': '10764',
+      'sci_fi': '878',
+      'war': '10752',
+      'western': '37'
+    };
+    
+    // Vérifie si la catégorie correspond à un endpoint TMDB standard
+    if (['now_playing', 'popular', 'top_rated', 'upcoming'].includes(category)) {
+      url = `${TMDB_API_URL}/movie/${category}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=fr-FR&region=FR&page=${page}`;
+    } 
+    // Vérifie si la catégorie correspond à un genre
+    else if (genreMap[category]) {
+      url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=${genreMap[category]}&language=fr-FR&page=${page}`;
+    }
+    // Par défaut, utilise la recherche par mot-clé
+    else {
+      url = `${TMDB_API_URL}/search/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&query=${category.replace('_', ' ')}&language=fr-FR&page=${page}`;
+    }
+    
+    const data = await fetchWithCache(url);
+    
+    // Si nous n'avons pas de résultats et que nous sommes au-delà de la page 1,
+    // cela signifie probablement qu'il n'y a plus de résultats disponibles
+    if ((!data.results || data.results.length === 0) && page > 1) {
+      return [];
+    }
+    
+    // Enrichir les résultats avec les providers en lots pour éviter de surcharger l'API
+    return await enrichMoviesWithProviders(data.results || []);
+  } catch (error) {
+    console.error(`Erreur lors du chargement des films pour la catégorie ${category}:`, error);
+    return [];
+  }
 }
 
 export async function fetchMostPopular() {
