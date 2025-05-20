@@ -21,9 +21,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   // Configuration pour Vercel
-  experimental: {
-    serverComponentsExternalPackages: ['sharp']
-  },
+  serverExternalPackages: ['sharp'],
 };
 
 export default nextConfig;
