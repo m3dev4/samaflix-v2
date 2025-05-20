@@ -9,9 +9,6 @@ import React, { useEffect, useState, Suspense, useMemo } from "react";
 import { categories } from "../../../constants";
 import { getMovies } from "../../../components/getMovie";
 import { useInView } from "react-intersection-observer";
-import Link from "next/link";
-import { ThemeColorToggle } from "@/components/themes/theme-color-toggle";
-import type { Metadata } from "next";
 import Navbar from "@/components/navbar";
 interface Movie {
   id: number;
@@ -143,50 +140,109 @@ const PageMovies = () => {
     }
   }, [selectedPlatform, categoryMovies, filterMoviesByPlatform]);
 
-  // Effet pour charger les films avec mise en cache
+  // Effet pour charger les films avec mise en cache et chargement progressif
   useEffect(() => {
-    const fetchMoviesData = async () => {
+    // Premier chargement - vérifier le cache pour un démarrage rapide
+    const checkCache = () => {
       try {
-        setIsLoading(true);
-
-        // Vérifier le cache
-        const cachedData = sessionStorage.getItem("moviesData");
-        if (cachedData) {
-          setCategoryMovies(JSON.parse(cachedData));
-          setIsLoading(false);
-          return;
+        const cachedData = localStorage.getItem("moviesData");
+        const cachedTimestamp = localStorage.getItem("moviesDataTimestamp");
+        
+        if (cachedData && cachedTimestamp) {
+          // Vérifier si le cache a moins de 12 heures
+          const now = Date.now();
+          const timestamp = parseInt(cachedTimestamp);
+          const twelveHoursMs = 12 * 60 * 60 * 1000;
+          
+          if (now - timestamp < twelveHoursMs) {
+            const parsedData = JSON.parse(cachedData);
+            setCategoryMovies(parsedData);
+            setIsLoading(false);
+            return true; // Cache valide et utilisé
+          }
         }
-
-        const data = await getMovies();
-        const categorizedMovies = {
-          "Now Playing": data.latestMovies,
-          "Top Rated": data.topRated,
-          "Most Popular": data.popularMovies,
-          "Action & Adventure": data.actionAndAdventure,
-          Animation: data.animation,
-          Comedy: data.comedy,
-          Crime: data.crime,
-          Documentary: data.documentary,
-          Drama: data.drama,
-          Horror: data.horror,
-          Family: data.family,
-          Romance: data.romance,
-          "Mystery & Thriller": data.mysteryAndThriller,
-          "Sci-Fi": data.scifi,
-          War: data.war,
-        };
-
-        // Mettre en cache les données
-        sessionStorage.setItem("moviesData", JSON.stringify(categorizedMovies));
-        setCategoryMovies(categorizedMovies);
+        return false; // Pas de cache ou cache expiré
       } catch (error) {
-        console.error("Erreur lors du chargement des films:", error);
-      } finally {
-        setIsLoading(false);
+        console.error("Erreur lors de la récupération du cache:", error);
+        return false;
       }
     };
 
-    fetchMoviesData();
+    // Chargement initial des catégories principales uniquement
+    const loadInitialCategories = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Charger d'abord uniquement les 3 premières catégories pour un affichage rapide
+        const data = await getMovies();
+        
+        const initialCategories = {
+          "Now Playing": data.latestMovies || [],
+          "Top Rated": data.topRated || [],
+          "Most Popular": data.popularMovies || [],
+        };
+        
+        setCategoryMovies(initialCategories);
+        setIsLoading(false);
+        
+        return { data, initialCategories };
+      } catch (error) {
+        console.error("Erreur lors du chargement initial des films:", error);
+        setIsLoading(false);
+        return { data: {}, initialCategories: {} };
+      }
+    };
+
+    // Chargement des catégories restantes en arrière-plan
+    const loadRemainingCategories = async (data: any, initialCategories: any) => {
+      try {
+        // Délai pour permettre au rendu initial de se terminer
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const allCategories = {
+          ...initialCategories,
+          "Action & Adventure": data.actionAndAdventure || [],
+          "Animation": data.animation || [],
+          "Comedy": data.comedy || [],
+          "Crime": data.crime || [],
+          "Documentary": data.documentary || [],
+          "Drama": data.drama || [],
+          "Horror": data.horror || [],
+          "Family": data.family || [],
+          "Romance": data.romance || [],
+          "Mystery & Thriller": data.mysteryAndThriller || [],
+          "Sci-Fi": data.scifi || [],
+          "War": data.war || [],
+        };
+        
+        setCategoryMovies(allCategories);
+        
+        // Mettre à jour le cache avec des données fraîches
+        localStorage.setItem("moviesData", JSON.stringify(allCategories));
+        localStorage.setItem("moviesDataTimestamp", Date.now().toString());
+      } catch (error) {
+        console.error("Erreur lors du chargement des catégories restantes:", error);
+      }
+    };
+
+    const initializeData = async () => {
+      // Vérifier d'abord le cache
+      if (!checkCache()) {
+        // Si pas de cache valide, charger les catégories principales
+        const { data, initialCategories } = await loadInitialCategories();
+        
+        // Puis charger les catégories restantes en arrière-plan
+        loadRemainingCategories(data, initialCategories);
+      } else {
+        // Le cache a été utilisé, mais rafraîchir les données en arrière-plan après un délai
+        setTimeout(async () => {
+          const { data, initialCategories } = await loadInitialCategories();
+          loadRemainingCategories(data, initialCategories);
+        }, 5000);
+      }
+    };
+
+    initializeData();
   }, []);
 
   // Mémoriser les films filtrés pour chaque catégorie
@@ -266,21 +322,14 @@ const PageMovies = () => {
               !isSearching && <div className="text-center"></div>
             )}
             {filteredCategories.map((item) => (
-              <Suspense
-                key={item.category}
-                fallback={
-                  <div className="h-[300px] animate-pulse bg-gray-800 rounded-lg" />
-                }
-              >
-                <div className="mb-10">
-                  <LazyMovieSection
-                    category={item.category}
-                    movies={item.movies}
-                    viewMode={item.viewMode}
-                    onViewChange={handleViewModeChange}
-                  />
-                </div>
-              </Suspense>
+              <div key={item.category} className="mb-10">
+                <LazyMovieSection
+                  category={item.category}
+                  movies={item.movies}
+                  viewMode={item.viewMode}
+                  onViewChange={handleViewModeChange}
+                />
+              </div>
             ))}
           </div>
         )}

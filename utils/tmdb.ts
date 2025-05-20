@@ -106,9 +106,59 @@ export async function fetchTopRated() {
   return fetchWithCache(url);
 }
 
-export async function searchMovies(query: string) {
-  const url = `${TMDB_API_URL}/search/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&query=${query}&language=fr-FR`;
+export async function searchMovies(query: string, page: number = 1) {
+  const url = `${TMDB_API_URL}/search/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&query=${query}&language=fr-FR&page=${page}`;
   return fetchWithCache(url);
+}
+
+// Fonction pour obtenir des films par catégorie avec pagination
+export async function getMoviesByCategory(category: string, page: number = 1): Promise<any[]> {
+  try {
+    let url = '';
+    const genreMap: Record<string, string> = {
+      'action_adventure': '12,28',
+      'animation': '16',
+      'comedy': '35',
+      'crime': '80',
+      'documentary': '99',
+      'drama': '18',
+      'horror': '27',
+      'family': '10751',
+      'romance': '10749',
+      'mystery_thriller': '9648,53',
+      'reality': '10764',
+      'sci_fi': '878',
+      'war': '10752',
+      'western': '37'
+    };
+    
+    // Vérifie si la catégorie correspond à un endpoint TMDB standard
+    if (['now_playing', 'popular', 'top_rated', 'upcoming'].includes(category)) {
+      url = `${TMDB_API_URL}/movie/${category}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=fr-FR&region=FR&page=${page}`;
+    } 
+    // Vérifie si la catégorie correspond à un genre
+    else if (genreMap[category]) {
+      url = `${TMDB_API_URL}/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=${genreMap[category]}&language=fr-FR&page=${page}`;
+    }
+    // Par défaut, utilise la recherche par mot-clé
+    else {
+      url = `${TMDB_API_URL}/search/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&query=${category.replace('_', ' ')}&language=fr-FR&page=${page}`;
+    }
+    
+    const data = await fetchWithCache(url);
+    
+    // Si nous n'avons pas de résultats et que nous sommes au-delà de la page 1,
+    // cela signifie probablement qu'il n'y a plus de résultats disponibles
+    if ((!data.results || data.results.length === 0) && page > 1) {
+      return [];
+    }
+    
+    // Enrichir les résultats avec les providers en lots pour éviter de surcharger l'API
+    return await enrichMoviesWithProviders(data.results || []);
+  } catch (error) {
+    console.error(`Erreur lors du chargement des films pour la catégorie ${category}:`, error);
+    return [];
+  }
 }
 
 export async function fetchMostPopular() {
