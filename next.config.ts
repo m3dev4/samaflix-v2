@@ -20,10 +20,6 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Configuration pour Vercel
-  experimental: {
-    serverComponentsExternalPackages: ['sharp']
-  },
 };
 
 export default nextConfig;
