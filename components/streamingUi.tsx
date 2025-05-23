@@ -49,14 +49,14 @@ const StreamingUi = async () => {
           {hero.overview}
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link
+          {/* <Link
             href={`/watch/${hero.id}?title=${encodeURIComponent(hero.title)}&description=${encodeURIComponent(hero.overview)}`}
           >
             <Button className="bg-rose-600 hover:bg-rose-700 text-white font-bold font-popins">
               <Play className="w-4 h-4 mr-2 font-extrabold" />
               Lecture
             </Button>
-          </Link>
+          </Link> */}
           <Link href={`/movie/${hero.id}`}>
             <Button
               className="border-gray-700 bg-gray-900/60 backdrop-blur-sm hover:bg-gray-800"

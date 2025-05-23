@@ -4,12 +4,25 @@ import { useState, useEffect, useRef } from "react";
 import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle, ChevronLeft, Loader2, RefreshCcw } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronLeft,
+  Loader2,
+  MessageCircle,
+  RefreshCcw,
+  Users,
+  Watch,
+  X,
+} from "lucide-react";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Button } from "../../components/ui/button";
 import { VideoInfo } from "./VideoInfo";
 import { SettingsMenu } from "../settingsVideo";
 import { VideoControls } from "./videoControl";
+import WatchPartyChat from "../watchPartyChat";
+import { useSocket } from "../../hooks/useSocket";
+import { v4 as uuidv4 } from "uuid";
+import { toast } from "sonner";
 
 interface VideoPlayerProps {
   embedUrl: string;
@@ -43,12 +56,20 @@ export function VideoPlayer({
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [currentQuality, setCurrentQuality] = useState('480p');
+  const [currentQuality, setCurrentQuality] = useState("480p");
   const [showControls, setShowControls] = useState(true);
-  const [currentSpeed, setCurrentSpeed] = useState('Normal');
+  const [currentSpeed, setCurrentSpeed] = useState("Normal");
   const [retryCount, setRetryCount] = useState(0);
   const [bufferedPercentage, setBufferedPercentage] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isWatchParty, setIsWatchParty] = useState(false);
+  const [watchPartyId, setWatchPartyId] = useState<string | null>(null);
+  const [showChat, setShowChat] = useState(false);
+  const [participantCount, setParticipantCount] = useState(1);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [userCount, setUserCount] = useState(0);
+  const { socket, isConnected } = useSocket();
   const maxRetries = 3;
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -62,10 +83,11 @@ export function VideoPlayer({
   const progressSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Extraire l'ID de la série et les informations de l'épisode de l'URL
-  const seriesId = searchParams.get('seriesId');
-  const seasonNumber = parseInt(title.match(/S(\d+)/)?.[1] || '1');
-  const episodeNumber = parseInt(title.match(/E(\d+)/)?.[1] || '1');
-  const startTime = parseFloat(searchParams.get('startTime') || '0');
+  const seriesId = searchParams.get("seriesId");
+  const seasonNumber = parseInt(title.match(/S(\d+)/)?.[1] || "1");
+  const episodeNumber = parseInt(title.match(/E(\d+)/)?.[1] || "1");
+  const startTime = parseFloat(searchParams.get("startTime") || "0");
+  const partyId = searchParams.get("watchParty");
 
   const saveProgress = () => {
     if (!seriesId || !videoRef.current) return;
@@ -76,17 +98,139 @@ export function VideoPlayer({
       duration: videoRef.current.duration,
       seasonNumber,
       episodeNumber,
-      lastWatched: new Date().toISOString()
+      lastWatched: new Date().toISOString(),
     };
 
     // Sauvegarder uniquement si on a regardé plus de 10 secondes
     if (videoRef.current.currentTime > 10) {
       // Sauvegarder pour l'épisode spécifique
-      localStorage.setItem(`series-progress-${seriesId}-${seasonNumber}-${episodeNumber}`, JSON.stringify(progress));
-      
+      localStorage.setItem(
+        `series-progress-${seriesId}-${seasonNumber}-${episodeNumber}`,
+        JSON.stringify(progress),
+      );
+
       // Sauvegarder aussi comme dernier épisode regardé
-      localStorage.setItem(`series-progress-${seriesId}`, JSON.stringify(progress));
+      localStorage.setItem(
+        `series-progress-${seriesId}`,
+        JSON.stringify(progress),
+      );
     }
+  };
+
+  useEffect(() => {
+    if (partyId && !watchPartyId) {
+      setWatchPartyId(partyId);
+      setIsWatchParty(true);
+      
+      // Charger les messages sauvegardés du localStorage une fois que partyId est disponible
+      try {
+        const saved = localStorage.getItem(`chat-messages-${partyId}`);
+        if (saved) {
+          const savedMessages = JSON.parse(saved);
+          setChatMessages(savedMessages);
+          console.log(`Chargé ${savedMessages.length} messages depuis le localStorage pour la salle ${partyId}`);
+        }
+      } catch (e) {
+        console.error('Erreur lors du chargement des messages:', e);
+      }
+    }
+  }, [partyId, watchPartyId]);
+
+  // Effet pour réinitialiser le compteur de messages non lus quand le chat est ouvert
+  useEffect(() => {
+    if (showChat) {
+      setUnreadMessages(0);
+    }
+  }, [showChat]);
+
+  // Gérer les événements de Watch Party
+  useEffect(() => {
+    if (!socket || !isWatchParty || !watchPartyId) return;
+
+    // Rejoindre la room
+    socket.emit("joinWatchParty", {
+      roomId: watchPartyId,
+      videoInfo: { title, embedUrl },
+    });
+
+    // Mise à jour du nombre de participants
+    socket.on("participantUpdate", ({ count }) => {
+      setParticipantCount(count);
+    });
+
+    // Synchronisation de la lecture vidéo
+    socket.on("videoControl", ({ action, time, senderId }) => {
+      if (!videoRef.current || socket.id === senderId) return;
+
+      const video = videoRef.current;
+
+      switch (action) {
+        case "play":
+          if (Math.abs(video.currentTime - time) > 2) {
+            video.currentTime = time;
+          }
+          video
+            .play()
+            .catch((error) => console.error("Error playing video:", error));
+          setIsPlaying(true);
+          break;
+        case "pause":
+          video.pause();
+          setIsPlaying(false);
+          break;
+        case "seek":
+          video.currentTime = time;
+          break;
+      }
+    });
+
+    return () => {
+      socket.off("participantUpdate");
+      socket.off("videoControl");
+      socket.emit("leaveWatchParty", { roomId: watchPartyId });
+    };
+  }, [socket, isWatchParty, watchPartyId, title, embedUrl]);
+
+  // Sauvegarder les messages du chat dans localStorage quand ils changent
+  // et gérer les notifications de nouveaux messages
+  useEffect(() => {
+    if (watchPartyId && chatMessages.length > 0) {
+      // Sauvegarder dans localStorage
+      localStorage.setItem(`chat-messages-${watchPartyId}`, JSON.stringify(chatMessages));
+      console.log(`Messages sauvegardés (${chatMessages.length}) pour la salle ${watchPartyId}`);
+      
+      // Vérifier s'il y a un nouveau message à notifier
+      if (!showChat && chatMessages.length > 0) {
+        const latestMessage = chatMessages[chatMessages.length - 1];
+        
+        // Vérifier si le message ne vient pas de l'utilisateur actuel
+        if (socket && latestMessage?.sender?.id !== socket.id) {
+          // Incrémenter le compteur de messages non lus
+          setUnreadMessages(prev => prev + 1);
+          
+          // Jouer un son de notification (optionnel)
+          try {
+            const audio = new Audio('/notification.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log('Impossible de jouer le son de notification'));
+          } catch (e) {
+            // Ignorer les erreurs liées à l'audio
+          }
+        }
+      }
+    }
+  }, [chatMessages, watchPartyId, showChat, socket]);
+  
+  // Synchroniser les contrôles vidéo avec les autres participants
+  const syncVideoControl = (action: "play" | "pause" | "seek") => {
+    if (!socket || !isWatchParty || !watchPartyId || !videoRef.current) return;
+
+    socket.emit("videoControl", {
+      roomId: watchPartyId,
+      action,
+      time: videoRef.current.currentTime,
+      senderId: socket.id,
+    });
   };
 
   // Sauvegarder plus fréquemment (toutes les 2 secondes)
@@ -108,9 +252,9 @@ export function VideoPlayer({
       saveProgress();
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, []);
 
@@ -120,14 +264,14 @@ export function VideoPlayer({
       const handleCanPlay = () => {
         if (videoRef.current) {
           videoRef.current.currentTime = startTime;
-          videoRef.current.removeEventListener('canplay', handleCanPlay);
+          videoRef.current.removeEventListener("canplay", handleCanPlay);
         }
       };
 
-      videoRef.current.addEventListener('canplay', handleCanPlay);
+      videoRef.current.addEventListener("canplay", handleCanPlay);
       return () => {
         if (videoRef.current) {
-          videoRef.current.removeEventListener('canplay', handleCanPlay);
+          videoRef.current.removeEventListener("canplay", handleCanPlay);
         }
       };
     }
@@ -145,8 +289,14 @@ export function VideoPlayer({
   };
 
   const updateBufferProgress = () => {
-    if (videoRef.current && videoRef.current.buffered.length > 0 && duration > 0) {
-      const bufferedEnd = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
+    if (
+      videoRef.current &&
+      videoRef.current.buffered.length > 0 &&
+      duration > 0
+    ) {
+      const bufferedEnd = videoRef.current.buffered.end(
+        videoRef.current.buffered.length - 1,
+      );
       setBufferedPercentage((bufferedEnd / duration) * 100);
     }
   };
@@ -155,7 +305,7 @@ export function VideoPlayer({
     if (videoRef.current) {
       setCurrentTime(videoRef.current.currentTime);
       updateBufferProgress();
-      
+
       // Sauvegarder si on a regardé plus de 90% de la vidéo
       if (videoRef.current.currentTime / videoRef.current.duration > 0.9) {
         saveProgress();
@@ -175,6 +325,57 @@ export function VideoPlayer({
       const pos = (e.clientX - rect.left) / rect.width;
       videoRef.current.currentTime = pos * videoRef.current.duration;
     }
+    if (isWatchParty) syncVideoControl("seek");
+  };
+
+  const createWatchParty = () => {
+    const newPartyId = uuidv4();
+    setWatchPartyId(newPartyId);
+    setIsWatchParty(true);
+
+    // Mettre à jour l'URL avec l'ID de la session
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set("watchParty", newPartyId);
+    window.history.pushState({}, "", currentUrl.toString());
+
+    if (socket) {
+      socket.emit("createWatchParty", {
+        roomId: newPartyId,
+        videoInfo: { title, embedUrl },
+      });
+    }
+
+    // Générer le lien de partage
+    const shareLink = currentUrl.toString();
+
+    // Copier le lien dans le presse-papier
+    navigator.clipboard
+      .writeText(shareLink)
+      .then(() => {
+        toast("Lien copié!");
+      })
+      .catch(() => {
+        toast("Impossible de copier le lien");
+      });
+  };
+
+  // Arrêter la session Watch Party
+  const stopWatchParty = () => {
+    if (socket && watchPartyId) {
+      socket.emit("leaveWatchParty", { roomId: watchPartyId });
+    }
+
+    setIsWatchParty(false);
+    setWatchPartyId(null);
+    setShowChat(false);
+    setParticipantCount(1);
+    setUnreadMessages(0);
+    setChatMessages([]);
+
+    // Mettre à jour l'URL pour retirer l'ID de la session
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete("watchParty");
+    window.history.pushState({}, "", currentUrl.toString());
   };
 
   const togglePlay = () => {
@@ -182,14 +383,19 @@ export function VideoPlayer({
       if (isPlaying) {
         videoRef.current.pause();
         setIsPlaying(false);
+        if (isWatchParty) syncVideoControl("pause");
         saveProgress(); // Sauvegarder lors de la pause
       } else {
-        videoRef.current.play().then(() => {
-          setIsPlaying(true);
-        }).catch(error => {
-          console.error("Error playing video:", error);
-          setIsPlaying(false);
-        });
+        videoRef.current
+          .play()
+          .then(() => {
+            setIsPlaying(true);
+            if (isWatchParty) syncVideoControl("play");
+          })
+          .catch((error) => {
+            console.error("Error playing video:", error);
+            setIsPlaying(false);
+          });
       }
     }
   };
@@ -221,7 +427,7 @@ export function VideoPlayer({
     if (containerRef.current) {
       if (!document.fullscreenElement) {
         if (containerRef.current.requestFullscreen) {
-        containerRef.current.requestFullscreen();
+          containerRef.current.requestFullscreen();
         } else if ((containerRef.current as any).webkitRequestFullscreen) {
           (containerRef.current as any).webkitRequestFullscreen();
         } else if ((containerRef.current as any).msRequestFullscreen) {
@@ -229,7 +435,7 @@ export function VideoPlayer({
         }
       } else {
         if (document.exitFullscreen) {
-        document.exitFullscreen();
+          document.exitFullscreen();
         } else if ((document as any).webkitExitFullscreen) {
           (document as any).webkitExitFullscreen();
         } else if ((document as any).msExitFullscreen) {
@@ -279,38 +485,38 @@ export function VideoPlayer({
 
         if (data.type === "hls" && Hls.isSupported()) {
           console.log("Utilisation du mode HLS");
-            hlsRef.current = new Hls({
-              capLevelToPlayerSize: true,
+          hlsRef.current = new Hls({
+            capLevelToPlayerSize: true,
             startLevel: 2,
-            debug: true
-            });
-            
-            hlsRef.current.loadSource(proxyUrl);
-            hlsRef.current.attachMedia(videoRef.current);
-            
+            debug: true,
+          });
+
+          hlsRef.current.loadSource(proxyUrl);
+          hlsRef.current.attachMedia(videoRef.current);
+
           hlsRef.current.on(Hls.Events.ERROR, (event, data) => {
             console.error("Erreur HLS:", event, data);
           });
-          
+
           hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
             console.log("Manifest HLS parsé avec succès");
-            videoRef.current?.play().catch(err => {
+            videoRef.current?.play().catch((err) => {
               console.error("Erreur lors de la lecture HLS:", err);
             });
           });
 
-            cleanupRef.current = () => {
-              if (hlsRef.current) {
-                hlsRef.current.destroy();
-                hlsRef.current = null;
-              }
-            };
+          cleanupRef.current = () => {
+            if (hlsRef.current) {
+              hlsRef.current.destroy();
+              hlsRef.current = null;
+            }
+          };
         } else {
           console.log("Utilisation du mode MP4 standard");
           videoRef.current.src = proxyUrl;
           videoRef.current.preload = "auto";
           await videoRef.current.load();
-          videoRef.current.play().catch(err => {
+          videoRef.current.play().catch((err) => {
             console.error("Erreur lors de la lecture MP4:", err);
             throw err;
           });
@@ -319,7 +525,11 @@ export function VideoPlayer({
       }
     } catch (error) {
       console.error("Erreur complète lors du chargement:", error);
-      setError(error instanceof Error ? error.message : "Une erreur est survenue lors de la lecture de la vidéo");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Une erreur est survenue lors de la lecture de la vidéo",
+      );
       setIsLoading(false);
     }
   };
@@ -328,15 +538,15 @@ export function VideoPlayer({
   const handleMouseMove = () => {
     const now = Date.now();
     lastMouseMoveRef.current = now;
-    
+
     if (!showControls) {
       setShowControls(true);
     }
-    
+
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current);
     }
-    
+
     if (isPlaying && !isSettingsOpen && !isDragging) {
       controlsTimeoutRef.current = setTimeout(() => {
         // Only hide if no movement in the last 3 seconds
@@ -348,12 +558,13 @@ export function VideoPlayer({
   };
 
   const handleFullscreenChange = () => {
-    const isFullscreenNow = document.fullscreenElement !== null ||
+    const isFullscreenNow =
+      document.fullscreenElement !== null ||
       (document as any).webkitFullscreenElement !== null ||
       (document as any).msFullscreenElement !== null;
     setIsFullscreen(isFullscreenNow);
     setShowControls(true);
-    
+
     if (!isFullscreenNow && controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current);
     }
@@ -377,11 +588,17 @@ export function VideoPlayer({
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
     document.addEventListener("MSFullscreenChange", handleFullscreenChange);
-    
+
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
-      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
-      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange,
+      );
+      document.removeEventListener(
+        "MSFullscreenChange",
+        handleFullscreenChange,
+      );
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
       }
@@ -433,11 +650,11 @@ export function VideoPlayer({
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.4 } }
+    visible: { opacity: 1, transition: { duration: 0.4 } },
   };
 
   return (
-    <motion.div 
+    <motion.div
       ref={containerRef}
       className="fixed inset-0 bg-black overflow-hidden"
       onMouseMove={handleMouseMove}
@@ -448,7 +665,7 @@ export function VideoPlayer({
       {/* Navigation Bar */}
       <AnimatePresence>
         {(showControls || !isPlaying) && (
-          <motion.div 
+          <motion.div
             className="absolute top-0 left-0 right-0 z-20 p-4 bg-gradient-to-b from-black/70 via-black/50 to-transparent"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -465,11 +682,16 @@ export function VideoPlayer({
                 <ChevronLeft className="h-5 w-5 mr-2 group-hover:translate-x-[-2px] transition-transform" />
                 <span className="font-medium">Retour</span>
               </motion.button>
-              <motion.div 
+              <motion.div
                 className="flex items-center px-4 py-2 bg-player-accent/20 backdrop-blur-md rounded-lg"
-                whileHover={{ scale: 1.05, backgroundColor: "rgba(58, 172, 247, 0.25)" }}
+                whileHover={{
+                  scale: 1.05,
+                  backgroundColor: "rgba(58, 172, 247, 0.25)",
+                }}
               >
-                <span className="text-white text-sm font-extrabold tracking-wide">samaflix</span>
+                {/* <span className="text-white text-sm font-extrabold tracking-wide">
+                  samaflix
+                </span> */}
               </motion.div>
             </div>
           </motion.div>
@@ -479,20 +701,20 @@ export function VideoPlayer({
       {/* Video Container */}
       <div className="relative h-full bg-black">
         {(isLoading || isBuffering) && (
-          <motion.div 
+          <motion.div
             className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-10"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              animate={{ 
+              animate={{
                 scale: [1, 1.1, 1],
                 opacity: [0.7, 1, 0.7],
               }}
-              transition={{ 
+              transition={{
                 repeat: Infinity,
-                duration: 2
+                duration: 2,
               }}
             >
               <Loader2 className="h-16 w-16 text-player-accent" />
@@ -502,15 +724,20 @@ export function VideoPlayer({
 
         {error ? (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md">
-            <motion.div 
+            <motion.div
               className="space-y-6 p-6 max-w-md bg-black/80 backdrop-blur-lg rounded-xl border border-white/10"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", duration: 0.5 }}
             >
-              <Alert variant="destructive" className="bg-destructive/20 border-destructive/30">
+              <Alert
+                variant="destructive"
+                className="bg-destructive/20 border-destructive/30"
+              >
                 <AlertCircle className="h-5 w-5" />
-                <AlertDescription className="font-medium">{error}</AlertDescription>
+                <AlertDescription className="font-medium">
+                  {error}
+                </AlertDescription>
               </Alert>
               <Button
                 variant="outline"
@@ -541,13 +768,15 @@ export function VideoPlayer({
               onPlaying={() => setIsBuffering(false)}
               onClick={togglePlay}
               onError={() => {
-                setError("Une erreur est survenue lors de la lecture de la vidéo");
+                setError(
+                  "Une erreur est survenue lors de la lecture de la vidéo",
+                );
               }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             />
-            
+
             {/* Video Info Overlay */}
             <AnimatePresence>
               {!isPlaying && !isLoading && !error && (
@@ -574,18 +803,40 @@ export function VideoPlayer({
                   whileTap={{ scale: 0.9 }}
                 >
                   {isPlaying ? (
-                    <motion.svg 
-                      width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    <motion.svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
                       className="md:w-9 md:h-9 w-6 h-6"
                       initial={{ scale: 0.8 }}
                       animate={{ scale: 1 }}
                     >
-                      <rect x="6" y="4" width="4" height="16" rx="1" fill="white" />
-                      <rect x="14" y="4" width="4" height="16" rx="1" fill="white" />
+                      <rect
+                        x="6"
+                        y="4"
+                        width="4"
+                        height="16"
+                        rx="1"
+                        fill="white"
+                      />
+                      <rect
+                        x="14"
+                        y="4"
+                        width="4"
+                        height="16"
+                        rx="1"
+                        fill="white"
+                      />
                     </motion.svg>
                   ) : (
-                    <motion.svg 
-                      width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    <motion.svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
                       className="md:w-9 md:h-9 w-6 h-6"
                       initial={{ scale: 0.8, x: 1 }}
                       animate={{ scale: 1, x: 0 }}
@@ -619,10 +870,73 @@ export function VideoPlayer({
               formatTime={formatTime}
               setIsDragging={setIsDragging}
             />
+
+            {showControls && (
+              <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
+                {isWatchParty ? (
+                  <>
+                    {/* <div className="flex items-center bg-black/40 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm">
+                      <Users className="w-4 h-4 mr-1" />
+                      {participantCount}
+                    </div> */}
+                    <button
+                      className="bg-black/40 backdrop-blur-sm rounded-full p-2 text-white hover:bg-player-accent/40 transition-colors relative"
+                      onClick={() => {
+                        setShowChat(!showChat);
+                        if (!showChat) setUnreadMessages(0); // Réinitialiser le compteur en ouvrant le chat
+                      }}
+                    >
+                      {showChat ? (
+                        <X className="w-4 h-4" />
+                      ) : (
+                        <>
+                          <MessageCircle className="w-4 h-4 font-extrabold" />
+                          {unreadMessages > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                              {unreadMessages > 9 ? '9+' : unreadMessages}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </button>
+                    <button
+                      className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm hover:bg-red-500/40 transition-colors"
+                      onClick={stopWatchParty}
+                    >
+                      Quitter
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm hover:bg-player-accent/40 transition-colors"
+                    onClick={createWatchParty}
+                  >
+                    <div className="flex items-center">
+                      <Users className="w-4 h-4 mr-1" />
+                      Regarder ensemble
+                    </div>
+                  </button>
+                )}
+              </div>
+            )}
           </>
         )}
+        {isWatchParty && (
+          <div 
+            className={`absolute top-0 right-0 h-full w-80 bg-black/70 backdrop-blur-sm z-20 transform transition-transform duration-300 ${showChat ? 'translate-x-0' : 'translate-x-full'}`}
+          >
+            <WatchPartyChat 
+              roomId={watchPartyId || ''} 
+              onClose={() => setShowChat(false)}
+              messages={chatMessages}
+              setMessages={setChatMessages}
+              userCount={userCount}
+              setUserCount={setUserCount}
+            />
+          </div>
+        )}
       </div>
-      
+
       {/* Settings Menu */}
       <SettingsMenu
         isOpen={isSettingsOpen}
@@ -634,9 +948,9 @@ export function VideoPlayer({
           if (hlsRef.current && videoRef.current) {
             const currentTime = videoRef.current.currentTime;
             const qualityLevel = hlsRef.current.levels.findIndex(
-              level => `${level.height}p` === quality
+              (level) => `${level.height}p` === quality,
             );
-            
+
             if (qualityLevel !== -1) {
               hlsRef.current.currentLevel = qualityLevel;
               videoRef.current.currentTime = currentTime;
@@ -646,7 +960,7 @@ export function VideoPlayer({
         onSpeedChange={(speed) => {
           setCurrentSpeed(speed);
           if (videoRef.current) {
-            const speedValue = speed === 'Normal' ? 1 : parseFloat(speed);
+            const speedValue = speed === "Normal" ? 1 : parseFloat(speed);
             videoRef.current.playbackRate = speedValue;
           }
         }}
