@@ -14,7 +14,7 @@ import { io, Socket } from "socket.io-client";
 
 export const useSocket = () => {
   // Utiliser directement localhost:3001 pour le serveur socket
-  const SOCKET_SERVER_URL = "http://localhost:3001";
+  const SOCKET_SERVER_URL = "https://samaflix-v2-with-socket.onrender.com";
 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
