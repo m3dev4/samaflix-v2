@@ -330,53 +330,72 @@ export function VideoPlayer({
 
   const createWatchParty = () => {
     const newPartyId = uuidv4();
-    setWatchPartyId(newPartyId);
-    setIsWatchParty(true);
+    
+    // Important: d'abord ouvrir le chat avant de changer l'état watchParty
+    // pour éviter la déformation de l'interface
+    setShowChat(true);
+    setUnreadMessages(0);
+    
+    // Ensuite mettre à jour les autres états
+    setTimeout(() => {
+      setWatchPartyId(newPartyId);
+      setIsWatchParty(true);
 
-    // Mettre à jour l'URL avec l'ID de la session
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set("watchParty", newPartyId);
-    window.history.pushState({}, "", currentUrl.toString());
+      // Mettre à jour l'URL avec l'ID de la session
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set("watchParty", newPartyId);
+      window.history.pushState({}, "", currentUrl.toString());
 
-    if (socket) {
-      socket.emit("createWatchParty", {
-        roomId: newPartyId,
-        videoInfo: { title, embedUrl },
-      });
-    }
+      if (socket) {
+        socket.emit("createWatchParty", {
+          roomId: newPartyId,
+          videoInfo: { title, embedUrl },
+        });
+      }
 
-    // Générer le lien de partage
-    const shareLink = currentUrl.toString();
+      // Générer le lien de partage
+      const shareLink = currentUrl.toString();
 
-    // Copier le lien dans le presse-papier
-    navigator.clipboard
-      .writeText(shareLink)
-      .then(() => {
-        toast("Lien copié!");
-      })
-      .catch(() => {
-        toast("Impossible de copier le lien");
-      });
+      // Copier le lien dans le presse-papier
+      navigator.clipboard
+        .writeText(shareLink)
+        .then(() => {
+          toast("Lien copié!");
+        })
+        .catch(() => {
+          toast("Impossible de copier le lien");
+        });
+    }, 0);
   };
 
   // Arrêter la session Watch Party
   const stopWatchParty = () => {
+    console.log("Arrêt de la Watch Party");
+    // D'abord quitter la salle socket
     if (socket && watchPartyId) {
       socket.emit("leaveWatchParty", { roomId: watchPartyId });
     }
 
-    setIsWatchParty(false);
-    setWatchPartyId(null);
-    setShowChat(false);
-    setParticipantCount(1);
-    setUnreadMessages(0);
-    setChatMessages([]);
-
     // Mettre à jour l'URL pour retirer l'ID de la session
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.delete("watchParty");
-    window.history.pushState({}, "", currentUrl.toString());
+    try {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.delete("watchParty");
+      window.history.pushState({}, "", currentUrl.toString());
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de l'URL:", error);
+    }
+
+    // Réinitialiser tous les états
+    setTimeout(() => {
+      setIsWatchParty(false);
+      setWatchPartyId(null);
+      setShowChat(false);
+      setParticipantCount(1);
+      setUnreadMessages(0);
+      setChatMessages([]);
+    }, 0);
   };
+
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -424,20 +443,54 @@ export function VideoPlayer({
   };
 
   const toggleFullscreen = () => {
+    // Détecter si on est sur mobile
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
     if (containerRef.current) {
-      if (!document.fullscreenElement) {
-        if (containerRef.current.requestFullscreen) {
+      // Vérifier si nous sommes déjà en plein écran
+      const isFullscreen = Boolean(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      
+      // Si nous ne sommes pas en plein écran, entrer en plein écran
+      if (!isFullscreen) {
+        // Utiliser la solution appropriée selon le navigateur et l'appareil
+        if (isMobile && videoRef.current && (videoRef.current as any).webkitEnterFullscreen) {
+          // Solution spécifique pour iOS
+          (videoRef.current as any).webkitEnterFullscreen();
+        } else if (containerRef.current.requestFullscreen) {
           containerRef.current.requestFullscreen();
         } else if ((containerRef.current as any).webkitRequestFullscreen) {
           (containerRef.current as any).webkitRequestFullscreen();
+        } else if ((containerRef.current as any).mozRequestFullScreen) {
+          (containerRef.current as any).mozRequestFullScreen();
         } else if ((containerRef.current as any).msRequestFullscreen) {
           (containerRef.current as any).msRequestFullscreen();
         }
+        
+        // Changer l'orientation en paysage sur mobile si possible
+        if (isMobile && window.screen && (window.screen as any).orientation && (window.screen as any).orientation.lock) {
+          try {
+            (window.screen as any).orientation.lock('landscape').catch((e: any) => {
+              // Ignorer les erreurs (certains appareils ne le supportent pas)
+              console.log('Impossible de verrouiller l\'orientation:', e);
+            });
+          } catch (e) {
+            // Ignorer les erreurs
+            console.log('Erreur lors du verrouillage de l\'orientation:', e);
+          }
+        }
       } else {
+        // Sortir du plein écran
         if (document.exitFullscreen) {
           document.exitFullscreen();
         } else if ((document as any).webkitExitFullscreen) {
           (document as any).webkitExitFullscreen();
+        } else if ((document as any).mozCancelFullScreen) {
+          (document as any).mozCancelFullScreen();
         } else if ((document as any).msExitFullscreen) {
           (document as any).msExitFullscreen();
         }
@@ -674,7 +727,24 @@ export function VideoPlayer({
           >
             <div className="flex items-center justify-between">
               <motion.button
-                onClick={() => router.back()}
+                onClick={() => {
+                  // Extraire l'ID du film de l'URL actuelle
+                  const currentPath = window.location.pathname;
+                  const movieId = currentPath.split('/').pop(); // Récupère l'ID à partir de /watch/ID
+                  
+                  // Si en mode "Regarder ensemble", arrêter la session
+                  if (isWatchParty) {
+                    stopWatchParty();
+                  }
+                  
+                  // Rediriger vers la page du film, peu importe l'état précédent
+                  if (movieId && !isNaN(Number(movieId))) {
+                    router.push(`/movie/${movieId}`);
+                  } else {
+                    // Fallback au cas où nous ne pouvons pas extraire l'ID
+                    router.push('/');
+                  }
+                }}
                 className="flex items-center text-white/90 hover:text-white transition-colors group"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -921,9 +991,12 @@ export function VideoPlayer({
             )}
           </>
         )}
+        
         {isWatchParty && (
           <div 
-            className={`absolute top-0 right-0 h-full w-80 bg-black/70 backdrop-blur-sm z-20 transform transition-transform duration-300 ${showChat ? 'translate-x-0' : 'translate-x-full'}`}
+            className={`absolute top-0 right-0 h-full bg-black/80 backdrop-blur-sm z-20 transform transition-transform duration-300 
+              ${showChat ? 'translate-x-0' : 'translate-x-full'}
+              sm:w-80 w-full max-w-full`} /* Responsive: pleine largeur sur mobile, 80 sur desktop */
           >
             <WatchPartyChat 
               roomId={watchPartyId || ''} 
