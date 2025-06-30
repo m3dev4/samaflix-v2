@@ -101,7 +101,7 @@ export function FilterSection({ onFilterChange, activeFilter = "all" }: FilterSe
               className="flex items-center justify-between"
             >
               {genre.name}
-              {activeFilter === genre.id && <Check className="h-4 w-4 text-primary" />}
+              {activeFilter === genre.id && <Check className="h-4 w-4 text-white" />}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -124,7 +124,7 @@ export function FilterSection({ onFilterChange, activeFilter = "all" }: FilterSe
               className="flex items-center justify-between"
             >
               {option.name}
-              {selectedSort === option.name && <Check className="h-4 w-4 text-primary" />}
+              {selectedSort === option.name && <Check className="h-4 w-4 text-white" />}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -147,7 +147,7 @@ export function FilterSection({ onFilterChange, activeFilter = "all" }: FilterSe
               className="flex items-center justify-between"
             >
               {year.name}
-              {activeFilter === year.id && <Check className="h-4 w-4 text-primary" />}
+              {activeFilter === year.id && <Check className="h-4 w-4 text-white" />}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

@@ -203,13 +203,13 @@ const PageSeries = () => {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-custom text-primary font-popins overflow-x-hidden">
+    <main className="min-h-screen bg-gradient-custom text-white font-popins overflow-x-hidden">
       <Navbar />
       <div className="container mx-auto px-4 py-8 space-y-12">
         <div ref={headerRef}>
           <section className="text-center space-y-4 my-32">
-            <h1 className="text-6xl font-bold text-primary">Séries</h1>
-            <p className="text-xl text-primary">
+            <h1 className="text-6xl font-bold text-white">Séries</h1>
+            <p className="text-xl text-white">
               Explore une large sélection de séries
             </p>
             <SearchBar onSearch={handleSearch} />

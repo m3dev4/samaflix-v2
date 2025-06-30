@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 
+// Force this API route to run in the Node.js runtime (not the Edge runtime)
+// because we need unrestricted streaming for large video files.
+export const runtime = "nodejs";
+// Disable static rendering / caching for this proxy route.
+export const dynamic = "force-dynamic";
+
 
 const CHUNK_SIZE = 512 * 1024; // Réduction à 512KB pour Vercel
 const MAX_CHUNK_SIZE = 2 * 1024 * 1024; // 2MB maximum

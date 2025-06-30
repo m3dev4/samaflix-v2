@@ -168,7 +168,7 @@ export default function MoviePage() {
   const progressPercent = progress ? Math.floor((progress.currentTime / progress.duration) * 100) : 0;
 
   return (
-    <div className="min-h-screen overflow-hidden bg-black text-primary w-full">
+    <div className="min-h-screen overflow-hidden bg-black text-white w-full">
       <ToastContainer 
        position="top-right"
        autoClose={5000}
@@ -189,13 +189,13 @@ export default function MoviePage() {
               <li className="flex items-center space-x-3 md:space-x-6">
                 <Link
                   href="/"
-                  className="text-xl md:text-2xl font-bold hover:text-primary transition-colors"
+                  className="text-xl md:text-2xl font-bold hover:text-white transition-colors"
                 >
                   Samaflix
                 </Link>
                 <Link
                   href="/pages/films"
-                  className="text-base md:text-lg font-medium hover:text-primary transition-colors"
+                  className="text-base md:text-lg font-medium hover:text-white transition-colors"
                 >
                   Films
                 </Link>
@@ -266,7 +266,7 @@ export default function MoviePage() {
             <div className="flex items-center gap-4">
               <Button
                 onClick={handlePlayClick}
-                className={`bg-slate-800 hover:bg-slate-900 text-primary px-4 sm:px-6 md:px-8 py-2 md:py-3 rounded-lg flex items-center gap-2 text-sm md:text-base ${
+                className={`bg-slate-800 hover:bg-slate-900 text-white px-4 sm:px-6 md:px-8 py-2 md:py-3 rounded-lg flex items-center gap-2 text-sm md:text-base ${
                   !streamingUrl ? 'opacity-50' : ''
                 }`}
               >

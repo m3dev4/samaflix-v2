@@ -1,4 +1,3 @@
-import React from "react";
 import { getImageUrl } from "@/utils/tmdb";
 import Image from "next/image";
 import { Button } from "./ui/button";
@@ -25,11 +24,11 @@ const StreamingUi = async () => {
       />
 
       <div className="absolute bottom-0 left-0 right-0 z-20 p-6 md:p-12 max-w-2xl space-y-4">
-        <h1 className="text-4xl md:text-6xl text-primary font-bold tracking-tighter">
+        <h1 className="text-4xl md:text-6xl text-white font-bold tracking-tighter">
           {hero.title}
         </h1>
 
-        <div className="flex items-center flex-wrap gap-3 text-sm text-primary">
+        <div className="flex items-center flex-wrap gap-3 text-sm text-white">
           <span>{hero ? "TV-MA" : "TV-14"}</span>
           <span>{new Date(hero.release_date).getFullYear()}</span>
           <Badge
@@ -62,8 +61,8 @@ const StreamingUi = async () => {
               className="border-gray-700 bg-gray-900/60 backdrop-blur-sm hover:bg-gray-800"
               variant="secondary"
             >
-              <Info className="w-4 h-4 mr-2" />
-              Plus d&apos;infos
+              <Info className="w-4 h-4 mr-2 text-white" />
+              <span className="font-popins text-white">Plus d&apos;infos</span>
             </Button>
           </Link>
         </div>

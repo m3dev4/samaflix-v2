@@ -105,7 +105,7 @@ export default function CategoryPage() {
   ).join(' ');
 
   return (
-    <main className="min-h-screen bg-gradient-custom text-primary font-popins p-8">
+    <main className="min-h-screen bg-gradient-custom text-white font-popins p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <Link

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ThemeColorToggle } from "./themes/theme-color-toggle";
 import { cn } from "@/lib/utils";
 import { Input } from "./ui/input";
@@ -24,8 +24,8 @@ const Navbar = () => {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
-          ? "bg-background/90 backdrop-blur-md shadow-md"
-          : "bg-background/0 backdrop-blur-sm shadow-none",
+          ? " backdrop-blur-md shadow-md"
+          : " backdrop-blur-sm shadow-none",
       )}
     >
       <div className="container mx-auto">
@@ -33,7 +33,7 @@ const Navbar = () => {
           <div className="flex items-center gap-8">
             <Link
               href="/"
-              className="text-2xl font-bold hover:text-primary transition-colors"
+              className="text-2xl font-bold hover:text-white transition-colors"
             >
               Samaflix
             </Link>
@@ -42,19 +42,19 @@ const Navbar = () => {
               <li className="flex items-center gap-6">
                 <Link
                   href="/pages/films"
-                  className="text-lg font-medium hover:text-primary transition-colors"
+                  className="text-lg font-medium hover:text-white transition-colors"
                 >
                   Films
                 </Link>
                 <Link
                   href="/pages/series"
-                  className="text-lg font-medium hover:text-primary transition-colors"
+                  className="text-lg font-medium hover:text-white transition-colors"
                 >
                   Séries
                 </Link>
                 <Link
                   href="/pages/favorites"
-                  className="text-lg font-medium hover:text-primary transition-colors"
+                  className="text-lg font-medium hover:text-white transition-colors"
                 >
                   Ma Liste
                 </Link>
@@ -91,7 +91,6 @@ const Navbar = () => {
             >
               <Search className="h-5 w-5" />
             </Button>
-            <ThemeColorToggle />
           </div>
 
           <Sheet>
@@ -111,19 +110,19 @@ const Navbar = () => {
                 <div className="flex flex-col items-center gap-3 pb-6 border-b border-gray-800">
                   <Link
                     href="/pages/films"
-                    className="text-lg font-medium py-2 hover:text-primary transition-colors"
+                    className="text-lg font-medium py-2 hover:text-white transition-colors"
                   >
                     Films
                   </Link>
                   <Link
                     href="/pages/series"
-                    className="text-lg font-medium py-2 hover:text-primary transition-colors"
+                    className="text-lg font-medium py-2 hover:text-white transition-colors"
                   >
                     Séries
                   </Link>
                   <Link
                     href="/pages/favorites"
-                    className="text-lg font-medium py-2 hover:text-primary transition-colors"
+                    className="text-lg font-medium py-2 hover:text-white transition-colors"
                   >
                     Favorites
                   </Link>

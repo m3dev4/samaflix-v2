@@ -181,7 +181,7 @@ const MovieCaroussel = ({
   if (!inView) {
     return (
       <div ref={sectionRef} className="space-y-4">
-        <h2 className="text-2xl text-primary font-popins">{title}</h2>
+        <h2 className="text-2xl text-white font-popins">{title}</h2>
         <div className="flex gap-4">
           {Array.from({ length: VISIBLE_ITEMS }).map((_, index) => (
             <div key={index} className="flex-none w-[200px]">
@@ -196,7 +196,7 @@ const MovieCaroussel = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl text-primary font-popins">
+        <h2 className="text-2xl text-white font-popins">
           {title} {movies.length > 0 && `(${movies.length})`}
         </h2>
         <div className="flex items-center gap-2">

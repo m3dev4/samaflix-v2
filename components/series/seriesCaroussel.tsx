@@ -84,7 +84,7 @@ const SeriesCaroussel = ({
   if (!inView) {
     return (
       <div ref={sectionRef} className="space-y-4">
-        <h2 className="text-2xl text-primary font-popins">{title}</h2>
+        <h2 className="text-2xl text-white font-popins">{title}</h2>
         <div className="flex gap-4">
           {Array.from({ length: VISIBLE_ITEMS }).map((_, index) => (
             <div key={index} className="flex-none w-[200px]">
@@ -99,13 +99,13 @@ const SeriesCaroussel = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl text-primary font-popins">
+        <h2 className="text-2xl text-white font-popins">
           {title} {series.length > 0 && `(${series.length})`}
         </h2>
         {showAllLink && (
           <Link 
             href={`/pages/series/provider/${providerId}`}
-            className="text-sm text-primary hover:text-primary/80 transition-colors"
+            className="text-sm text-white hover:text-white/80 transition-colors"
           >
             Voir tout
           </Link>
